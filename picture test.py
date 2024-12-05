@@ -3,10 +3,6 @@ from libs.tool import ImageTool, Action, Window
 from libs.log import Log
 
 
-
-
-
-
 for window_id in ["001"]:
     # 初始化窗口和动作实例
     log = Log(window_id)
@@ -21,5 +17,5 @@ for window_id in ["001"]:
 
 
 
-image_tool.image("download2.png", threshold=0.8, click_times=0)
+image_tool.picture("salvage", threshold=0.8, click_times=1)
 

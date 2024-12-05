@@ -8,6 +8,9 @@ import win32com.client
 from PIL import Image
 import win32gui
 import win32con
+import requests
+import base64
+import io
 
 
 class Window:
@@ -169,21 +172,25 @@ class Window:
             print(f"关闭窗口失败: {e}")
             return False
 
-    def capture_window(self):
+    def capture_window(self, region=None):
         """截取窗口内容"""
         if not self.is_bound:
             if not self.bind_window():
                 print("绑定失败，无法执行点击操作")
                 return
 
+        # 获取窗口的客户端区域坐标
         left, top, right, bottom = win32gui.GetClientRect(self.hwnd)
-        width = 606  # 截取区域的宽度
-        height = 1077  # 截取区域的高度
-        y_offset = 0  # y坐标的偏移量
+        width = right - left  # 截取区域的宽度
+        height = bottom - top  # 截取区域的高度
 
-        # 新的截取区域的左上角坐标
-        left = left
-        top = top + y_offset
+        # 如果提供了 region 参数，则使用指定区域的坐标和大小
+        if region:
+            x1, y1, w, h = region
+            left = left + x1  # 相对窗口的左上角坐标
+            top = top + y1
+            width = w
+            height = h
 
         hdc = win32gui.GetDC(self.hwnd)
         mem_dc = win32gui.CreateCompatibleDC(hdc)
@@ -201,6 +208,9 @@ class Window:
         hdc_win32(bitmap.handle, buffer_size, bits)
 
         img = Image.frombuffer('RGB', (bmp_header.bmWidth, bmp_header.bmHeight), bits, 'raw', 'BGRX', 0, 1)
+
+        # 将左上角100x100区域的像素设置为黑色（这部分可以去掉或根据需求修改）
+        img.paste((0, 0, 0), (0, 0, 100, 30))  # 设置左上角区域为黑色
 
         win32gui.DeleteObject(bitmap)
         win32gui.DeleteDC(mem_dc)
@@ -226,7 +236,7 @@ class Action:
         dm.MoveTo(x, y)  # 移动到指定坐标
         for _ in range(click_times):
             dm.LeftClick()  # 执行点击操作
-            print(f"点击{x, y}")
+            # print(f"点击{x, y}")
 
         # 添加延迟，确保操作完成（你可以根据需要调整延迟）
         time.sleep(1.5)
@@ -332,9 +342,14 @@ class ImageTool:
     def __init__(self, action):
         self.action = action
 
-    def  image(self, png, threshold=0.8, offset=(0, 0), click_times=1, color=True):
+    def picture(self, png, threshold=0.8, offset=(0, 0), click_times=1, color=True):
         # 获取图片路径并加载图片
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        # 自动添加 ".png" 扩展名，如果没有提供扩展名
+        if not png.endswith('.png'):
+            png += '.png'
+
         target_path = os.path.join(base_dir, 'images', png)
         target = cv2.imread(str(target_path))
 
@@ -380,7 +395,7 @@ class ImageTool:
             x = center_x + offset[0]
             y = center_y + offset[1]
 
-            print(f"找到 '{png}'，({x}, {y})，偏移 {offset}，点击 {click_times} 次")
+            print(f"找到图片 '{png}'，坐标({x}, {y})，偏移 {offset}，点击 {click_times} 次")
             for _ in range(click_times):
                 self.action.click(x, y)
             return x, y
@@ -388,7 +403,7 @@ class ImageTool:
             print(f"未找到{png}")
             return None
 
-    def find_color(self, coordinates, target_color, tolerance=10):
+    def color(self, coordinates, target_color, tolerance=10):
         """
         判断多个指定位置的颜色是否为目标颜色，只要一个匹配成功就返回True。
         :param coordinates: 坐标列表，包含多个 (x, y) 元组
@@ -415,5 +430,77 @@ class ImageTool:
             if np.all(diff <= tolerance):  # 如果颜色差异小于容忍度，认为颜色匹配
                 return True
         return False
+
+    def text(self, target_text, offset=(0, 0), click_times=1, region=None):
+        """
+        查找图片中的指定文字，并在找到目标文字时执行点击操作。
+
+        参数:
+        target_text: 目标文字
+        offset: 偏移量
+        click_times: 点击次数
+        region: 限制识别区域，格式为 (x1, y1, width, height)
+        """
+        # 获取当前窗口的截图
+        screenshot = self.action.window.capture_window(region=region)
+        if screenshot is None:
+            print("无法获取截图")
+            return None
+
+        # 将图片转换为 base64 编码
+        buffered = io.BytesIO()
+        screenshot.save(buffered, format="PNG")
+        img_base64 = base64.b64encode(buffered.getvalue()).decode()
+
+        # 向服务器发送 POST 请求进行 OCR 识别
+        url = "http://127.0.0.1:20086/base64"
+        res = requests.post(url, json={"img": img_base64})
+
+        # 获取返回的 JSON 数据
+        response_data = res.json()
+
+        # 存储文字和坐标的列表
+        text_coordinates = []
+
+        # 提取识别到的文字和坐标信息
+        if response_data["code"] == 1 and response_data["data"]:
+            for item in response_data["data"]:
+                text = item["text"]
+                x1, y1, x2, y2 = item["x1"], item["y1"], item["x2"], item["y2"]
+
+                # 计算中心点坐标
+                center_x = (x1 + x2) / 2
+                center_y = (y1 + y2) / 2
+                text_coordinates.append((text, (center_x, center_y)))
+        else:
+            print("未识别到任何文字。")
+            return None
+
+        # 计算坐标的偏移量（如果提供了 region）
+        if region:
+            x1, y1, _, _ = region
+        else:
+            x1, y1 = 0, 0  # 如果没有指定 region，默认为窗口的左上角
+
+        # 遍历识别到的文字坐标，查找目标文字
+        for text, (center_x, center_y) in text_coordinates:
+            if text == target_text:
+                # 将截图坐标转换为全窗口坐标
+                global_x = center_x + x1
+                global_y = center_y + y1
+
+                # 应用额外的偏移量
+                global_x += offset[0]
+                global_y += offset[1]
+
+                print(f"找到文字 '{target_text}'，坐标 ({global_x}, {global_y})，偏移 {offset}，点击 {click_times} 次")
+                for _ in range(click_times):
+                    self.action.click(global_x, global_y)
+                return global_x, global_y
+
+        # 如果未找到目标文字
+        print(f"未找到目标文字 '{target_text}'")
+        return None
+
 
 

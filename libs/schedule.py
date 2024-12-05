@@ -47,7 +47,7 @@ class Scheduler:
         window.open_window()
 
         # 只有在检测到维护画面时才关闭窗口
-        if image_tool.image("maintain.png", click_times=0):
+        if image_tool.picture("maintain", click_times=0):
             log.info("游戏维护")
             window.close_window()
             action.click(400, 695)  # 点击关闭按钮
@@ -62,12 +62,7 @@ class Scheduler:
         game.collect_diamond()
 
         # 检查toyz侦察
-        action.click(354, 1016), time.sleep(2)
-        if (image_tool.image("+.png", click_times=0) or
-                image_tool.image("ling.png", click_times=0)):
-            game.toyz()
-        else:
-            action.click(354, 1016)
+        game.toyz()
 
         # 动态检查任务是否需要执行
         now = datetime.now()
@@ -98,6 +93,7 @@ class Scheduler:
                 p = multiprocessing.Process(target=self.process_window, args=(window_id, self.tasks))
                 processes.append(p)
                 p.start()
+                time.sleep(10)
 
             # 等待所有进程完成
             for p in processes:
