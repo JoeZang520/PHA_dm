@@ -5,8 +5,9 @@ from libs.log import Log
 from libs.game import Game
 from libs.tool import ImageTool, Action, Window
 from dotenv import load_dotenv
-import os
 import multiprocessing
+import os
+
 
 # 加载 .env 文件
 load_dotenv()

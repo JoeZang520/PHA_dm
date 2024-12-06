@@ -36,7 +36,8 @@ class Game:
 
         self.image_tool.picture("adx", click_times=3)
         for _ in range(3):
-            self.image_tool.text("确认", click_times=4)
+            self.image_tool.text("确认", click_times=2)
+            self.image_tool.text("获得奖励", click_times=2)
 
 
 
@@ -108,7 +109,7 @@ class Game:
                             if self.image_tool.text("收藏增益登记", offset=(20, 60)):
                                 self.image_tool.text("选择")
                                 self.image_tool.text("确认", click_times=2)
-                        self.action.drag((80, 600), (80, 1200), duration=2, steps=5)  # 拖拽回首页
+                        self.action.drag((80, 600), (80, 1200))  # 拖拽回首页
                         self.image_tool.picture("knife")
                         self.image_tool.picture("knife", offset=(0, -120))
                         print("分解装备")
@@ -164,7 +165,7 @@ class Game:
         clicks = [
             (-100, 0),  # 人物
             (-80, -75),  # 成长
-            (300, -680),  # 升级
+            (290, -650),  # 升级
             (-100, 0)  # 人物
         ]
         base_position = self.image_tool.picture("bag", click_times=0)
@@ -368,34 +369,35 @@ class Game:
     def toyz(self):
         self.log.info("放置Toyz")
         self.image_tool.picture("bag", offset=(200, 0)), time.sleep(2)
+        self.image_tool.picture("bag", offset=(340, -735)), time.sleep(2)
         if (self.image_tool.picture("+", click_times=1)
                 or self.image_tool.text("领取慎察奖励", click_times=2)
                 or self.image_tool.text("领取值察奖励", click_times=2)
                 or self.image_tool.text("领取察奖励", click_times=2)):
             self.image_tool.picture("+", click_times=1)
 
-            result = self.image_tool.text("确认", click_times=0)
+            result = self.image_tool.picture("ruby", click_times=0)
             if result is not None:
                 x, y = result
-                self.action.click(x - 282, y - 309), self.action.click(x - 282, y - 309)  # 选取第0个
-                self.action.click(x - 87, y - 628)  # 放置第0个
-                self.action.click(x - 185, y - 304), self.action.click(x - 185, y - 304)  # 选取第1个
-                self.action.click(x - 182, y - 627)  # 放置第1个
-                self.action.click(x - 88, y - 303), self.action.click(x - 88, y - 303)  # 选取第2个
-                self.action.click(x - 136, y - 706)  # 放置第2个
-                self.action.click(x + 16, y - 304), self.action.click(x + 16, y - 304)  # 选取第3个
-                self.action.click(x - 36, y - 702)  # 放置第3个
-                self.action.click(x + 111, y - 309), self.action.click(x + 111, y - 309)  # 选取第4个
-                self.action.click(x + 12, y - 627)  # 放置第4个
-                self.action.click(x - 231, y - 231), self.action.click(x - 231, y - 231)  # 选取第5个
-                self.action.click(x - 39, y - 552)  # 放置第5个
-                self.action.click(x - 134, y - 238), self.action.click(253, 758)  # 选取第6个
-                self.action.click(x - 135, y - 557)  # 放置第6个
+                self.action.click(x - 154, y + 653), self.action.click(x - 154, y + 653)  # 选取第0个
+                self.action.click(x + 43, y + 219)  # 放置第0个
+                self.action.click(x - 58, y + 655), self.action.click(x - 58, y + 655)  # 选取第1个
+                self.action.click(x - 55, y + 214)  # 放置第1个
+                self.action.click(x + 44, y + 651), self.action.click(x + 44, y + 651)  # 选取第2个
+                self.action.click(x - 10, y + 143)  # 放置第2个
+                self.action.click(x + 140, y + 652), self.action.click(x + 140, y + 652)  # 选取第3个
+                self.action.click(x + 89, y + 141)  # 放置第3个
+                self.action.click(x + 231, y + 652), self.action.click(x + 231, y + 652)  # 选取第4个
+                self.action.click(x + 138, y + 217)  # 放置第4个
+                self.action.click(x - 107, y + 722), self.action.click(x - 107, y + 722)  # 选取第5个
+                self.action.click(x + 89, y + 292)  # 放置第5个
+                self.action.click(x - 10, y + 722), self.action.click(x - 10, y + 722)  # 选取第6个
+                self.action.click(x - 10, y + 289)  # 放置第6个
 
-                self.action.click(x, y)  # 确认
+                self.action.click(x+125, y+959)  # 确认
+                self.image_tool.text("开始ToyZ查")
                 self.image_tool.text("开始ToyZ慎察")
-                self.image_tool.text("开始ToyZ俱察")
-                self.image_tool.text("开始ToyZ察")
+
         self.action.click(20, 20)  # 返回主界面
 
 

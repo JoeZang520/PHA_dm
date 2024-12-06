@@ -17,6 +17,6 @@ for window_id in ["002"]:
 
 
 
-    action.drag((100,760), (100,100))
+    action.drag((80, 600), (80, 1200))
 
 

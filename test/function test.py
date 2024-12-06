@@ -15,6 +15,6 @@ for window_id in ["001"]:
     # 打开窗口
     window.open_window()
 
-    game.collect_diamond()
+    game.toyz()
 
 

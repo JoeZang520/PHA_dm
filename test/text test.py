@@ -6,7 +6,7 @@ import base64
 import io
 
 
-for window_id in ["002"]:
+for window_id in ["001"]:
     # 初始化窗口和动作实例
     log = Log(window_id)
     window = Window(window_id)
