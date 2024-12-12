@@ -6,3 +6,5 @@ git push --force origin main
 git fetch origin
 
 git pull --rebase origin main
+git pull origin main
+git push origin main

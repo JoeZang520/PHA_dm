@@ -67,6 +67,10 @@ class Game:
     def enter_game(self, timeout=150):
         elapsed_time = 0
         while elapsed_time < timeout:
+            if self.image_tool.picture("maintain", click_times=0):
+                self.log.info("游戏维护")
+                self.window.close_window()
+                sys.exit(1)
             if self.in_game() or self.in_afk():  # 如果已经进入游戏
                 print("成功进入游戏")
                 return
@@ -110,11 +114,6 @@ class Game:
         if self.image_tool.text("Additional data download", offset=(0, 140)):
             self.log.info("游戏更新下载")
             self.timer(60, "等待下载")
-        if self.image_tool.picture("maintain", click_times=0):
-            self.log.info("游戏维护")
-            self.window.close_window()
-            sys.exit(1)
-
 
     # 将装备加入图鉴或者分解
     def book(self, equip_number):
