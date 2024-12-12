@@ -6,19 +6,17 @@ from libs.tool import ImageTool, Action, Window
 from libs.log import Log
 
 
-for window_id in ["001"]:
+for window_id in ["003"]:
     # 初始化窗口和动作实例
     log = Log(window_id)
     window = Window(window_id)
     action = Action(window)
     image_tool = ImageTool(action)
-    game = Game(image_tool, action, log, window_id)
-
-    # 打开窗口
-    window.open_window()
+    game = Game(window, image_tool, action, log, window_id)
+    game.enter_game()
 
 def party_boss():
-    game.switch("auto_green.png")
+    game.switch("auto_green")
     directions = [
         ("W",),  # 上
         ("S",),  # 下
@@ -32,12 +30,12 @@ def party_boss():
 
     last_direction = None  # 记录上一次的方向
     extra_rounds = 0  # 记录额外执行的轮数
-    found_que_green = False  # 是否找到 que_green.png
+    confirm = False  # 是否找到确定
 
     for _ in range(50):
         # 如果找到 que_green.png
-        if image_tool.image("que_green.png"):
-            if not found_que_green:  # 如果第一次找到
+        if image_tool.text("确定"):
+            if not confirm:  # 如果第一次找到
                 found_que_green = True  # 设置已找到
                 extra_rounds = 5  # 找到后设置额外的执行轮数
 
@@ -74,7 +72,7 @@ def party_boss():
         last_direction = direction
 
         # 如果已执行了 5 轮额外操作且图片已找到，退出循环
-        if extra_rounds == 0 and found_que_green:
+        if extra_rounds == 0 and confirm:
             break
 
 

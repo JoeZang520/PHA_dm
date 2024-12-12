@@ -1,53 +1,60 @@
 import os
 import subprocess
 import time
-import ctypes
 import cv2
 import numpy as np
-import win32com.client
 from PIL import Image
 import win32gui
 import win32con
+import win32process
+import win32api
+import win32com.client
+import ctypes
 import requests
 import base64
 import io
+import libs.config as config
+
+
+
 
 
 class Window:
     def __init__(self, window_id):
         self.window_id = window_id
-        self.instance_mapping = {
-            "001": "Pie64_1",
-            "002": "Pie64_2",
-            "003": "Pie64_3",
-        }
+        self.instance_id = config.get_instance_id(window_id)
         self.package_name = "com.Z5.Adventure"
-        self.instance_id = self.instance_mapping.get(window_id)
-        if not self.instance_id:
-            raise ValueError(f"未知的 window_id '{window_id}'，请检查实例映射。")
 
-        # 加载大漠插件并创建实例
-        obj = ctypes.windll.LoadLibrary(r"C:\Users\J9\Desktop\PHA_dm\DmReg.dll")
-        obj.SetDllPathW(r"C:\Users\J9\Desktop\PHA_dm\dm.dll")
+        # 获取当前脚本所在目录
+        script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # 设置大漠插件的路径
+        DmReg_path = os.path.join(script_dir,'dm', 'DmReg.dll')
+        dm_dll_path = os.path.join(script_dir,'dm', 'dm.dll')
+        # 加载大漠插件
+        obj = ctypes.windll.LoadLibrary(DmReg_path)
+        obj.SetDllPathW(dm_dll_path)
         self.dm = win32com.client.Dispatch('dm.dmsoft')
-        self.hwnd = None
-        self.game_hwnd = None
         self.action = Action(self)  # 创建 Action 对象并传递当前窗口实例
 
         # 注册大漠插件
         self.register_dm_plugin()
-
         # 默认情况下绑定窗口
         self.is_bound = False
+
 
     def register_dm_plugin(self):
         """注册大漠插件"""
         try:
-            res = self.dm.reg("mh84909b3bf80d45c618136887775ccc90d27d7", "mimhwsaelcfp20vf7")
-            if res == 1:
-                print("大漠插件注册成功")
+            # 从 config 中获取注册信息
+            code, add_code = config.get_dm_registration()
+            if code and add_code:
+                res = self.dm.reg(code, add_code)  # 使用从 config 文件中读取的注册信息
+                if res == 1:
+                    print("大漠插件注册成功")
+                else:
+                    print("大漠插件注册失败")
             else:
-                print("大漠插件注册失败")
+                print("大漠插件注册信息丢失")
         except Exception as e:
             print(f"注册大漠插件失败: {e}")
 
@@ -77,7 +84,9 @@ class Window:
                 child_hwnds.append(hwnd)
 
         win32gui.EnumChildWindows(parent_hwnd, enum_child_windows, child_hwnds)
-        return child_hwnds
+        if child_hwnds:
+            return child_hwnds[0]  # 返回第一个符合条件的子窗口句柄
+        return None
 
     def bind_window(self):
         """绑定游戏窗口"""
@@ -93,14 +102,10 @@ class Window:
             return False
 
         # 获取父窗口的子窗口句柄（假设游戏窗口是子窗口）
-        child_hwnds = self.get_child_hwnd(parent_hwnd)
-        if not child_hwnds:
+        game_hwnd = self.get_child_hwnd(parent_hwnd)
+        if not game_hwnd:
             print(f"未能找到子窗口")
             return False
-
-        # 假设第一个子窗口是游戏窗口，或者根据子窗口的其他特征来选择
-        game_hwnd = child_hwnds[0]
-        print(f"找到游戏窗口句柄: {game_hwnd}")
 
         # 绑定游戏窗口
         res = self.dm.BindWindow(game_hwnd, "normal", "windows2", "windows", 0)
@@ -113,23 +118,35 @@ class Window:
             print(f"游戏窗口 '{self.window_id}' 绑定失败")
             return False
 
-    def open_window(self, timeout=60):
-        bluestacks_path = r"C:\Program Files\BlueStacks_nxt\HD-Player.exe"
+    def game_exist(self):
+        """检查是否已经在游戏中"""
+        self.hwnd = self.get_hwnd()
+        if self.hwnd:  # 如果父窗口存在
+            self.game_hwnd = self.get_child_hwnd(self.hwnd)
+            if self.game_hwnd:  # 如果子窗口存在
+                print(f"游戏窗口 '{self.window_id}' 已找到，句柄: {self.game_hwnd}")
+                return True
+            else:
+                print(f"游戏子窗口未找到，继续等待...")
+        print(f"未找到游戏窗口 '{self.window_id}'，需要启动")
+        return False
 
+    def open_window(self, timeout=60):
+        """尝试打开游戏窗口"""
+        if self.game_exist():  # 如果已经有游戏窗口，直接返回
+            print("已经存在游戏句柄，跳过打开窗口")
+            return True
+
+        bluestacks_path = r"C:\Program Files\BlueStacks_nxt\HD-Player.exe"
         cmd_args = [
             bluestacks_path,
-            "--instance", self.instance_id,  # 使用实例 ID
+            "--instance", self.instance_id,
             "--cmd", "launchAppWithBsx",
             "--package", self.package_name,
             "--source", "desktop_shortcut"
         ]
 
-        # 检查窗口句柄是否已经存在
-        self.hwnd = self.get_hwnd()
-        if self.hwnd:
-            print(f"窗口 '{self.window_id}' 已经存在，句柄: {self.hwnd}")
-            return True
-
+        # 如果没有找到窗口句柄，则尝试启动窗口
         try:
             subprocess.Popen(cmd_args, shell=False)
             print(f"正在启动窗口 '{self.window_id}'")
@@ -140,11 +157,17 @@ class Window:
         # 等待窗口加载
         elapsed_time = 0
         while elapsed_time < timeout:
-            self.hwnd = self.get_hwnd()
-            if self.hwnd:
-                print(f"窗口 '{self.window_id}' 加载成功，句柄: {self.hwnd}")
-                return True
-            print(f"未找到窗口 '{self.window_id}' 的句柄，等待加载中... ({elapsed_time}/{timeout} 秒)")
+            self.hwnd = self.get_hwnd()  # 每次循环重新获取窗口句柄
+            if self.hwnd:  # 窗口句柄存在
+                self.game_hwnd = self.get_child_hwnd(self.hwnd)
+                if self.game_hwnd:  # 如果子窗口句柄存在
+                    print(f"游戏窗口 '{self.window_id}' 加载成功，句柄: {self.game_hwnd}")
+                    return True
+                else:
+                    print(f"未找到游戏子窗口，继续等待... ({elapsed_time}/{timeout} 秒)")
+            else:
+                print(f"未找到窗口 '{self.window_id}' 的句柄，继续等待... ({elapsed_time}/{timeout} 秒)")
+
             time.sleep(1)
             elapsed_time += 1
 
@@ -153,23 +176,20 @@ class Window:
 
     def close_window(self):
         """通过父窗口句柄关闭窗口"""
-        # 获取父窗口句柄
         parent_hwnd = self.get_hwnd()
         if not parent_hwnd:
             print(f"未能找到父窗口句柄: {self.window_id}")
             return False
-
         try:
-            # 发送关闭请求
-            res = win32gui.PostMessage(parent_hwnd, win32con.WM_CLOSE, 0, 0)
-            if res:
-                print(f"窗口 '{self.window_id}' 关闭请求已发送")
-                return True
-            else:
-                print(f"窗口 '{self.window_id}' 关闭失败")
-                return False
+            # 获取窗口进程ID
+            _, process_id = win32process.GetWindowThreadProcessId(parent_hwnd)
+            # 强制终止进程
+            process_handle = win32api.OpenProcess(win32con.PROCESS_TERMINATE, False, process_id)
+            win32api.TerminateProcess(process_handle, 0)
+            print(f"窗口 '{self.window_id}' 已强制关闭")
+            return True
         except Exception as e:
-            print(f"关闭窗口失败: {e}")
+            print(f"强制关闭窗口失败: {e}")
             return False
 
     def capture_window(self, region=None):
@@ -180,7 +200,7 @@ class Window:
                 return
 
         # 获取窗口的客户端区域坐标
-        left, top, right, bottom = win32gui.GetClientRect(self.hwnd)
+        left, top, right, bottom = win32gui.GetClientRect(self.game_hwnd)
         width = right - left  # 截取区域的宽度
         height = bottom - top  # 截取区域的高度
 
@@ -192,7 +212,7 @@ class Window:
             width = w
             height = h
 
-        hdc = win32gui.GetDC(self.hwnd)
+        hdc = win32gui.GetDC(self.game_hwnd)
         mem_dc = win32gui.CreateCompatibleDC(hdc)
         bitmap = win32gui.CreateCompatibleBitmap(hdc, width, height)
 
@@ -214,7 +234,7 @@ class Window:
 
         win32gui.DeleteObject(bitmap)
         win32gui.DeleteDC(mem_dc)
-        win32gui.ReleaseDC(self.hwnd, hdc)
+        win32gui.ReleaseDC(self.game_hwnd, hdc)
 
         return img
 
@@ -222,6 +242,7 @@ class Window:
 class Action:
     def __init__(self, window):
         self.window = window
+
 
     def click(self, x, y, click_times=1):
         """模拟点击"""
@@ -236,10 +257,10 @@ class Action:
         dm.MoveTo(x, y)  # 移动到指定坐标
         for _ in range(click_times):
             dm.LeftClick()  # 执行点击操作
+            # 添加延迟，确保操作完成（你可以根据需要调整延迟）
+            time.sleep(1.5)
             # print(f"点击{x, y}")
 
-        # 添加延迟，确保操作完成（你可以根据需要调整延迟）
-        time.sleep(1.5)
 
     def press(self, *keys, second=None):
         """
@@ -322,8 +343,7 @@ class Action:
         # 模拟鼠标按下
         dm.MoveTo(start_x, start_y)
         dm.LeftDown()  # 按下左键
-
-
+        print("dragging start")
         # 逐步滑动鼠标
         for i in range(steps + 1):
             current_x = int(start_x + delta_x * i)
@@ -335,18 +355,20 @@ class Action:
         # 模拟鼠标释放
         dm.LeftUp()  # 释放左键
         time.sleep(0.5)
+        print("dragging end")
 
 
 
 class ImageTool:
-    def __init__(self, action):
-        self.action = action
+    def __init__(self, window, action):  # 接收 window 和 action 对象
+        self.window = window
+        self.action = action  # 存储 action 对象
 
-    def picture(self, png, threshold=0.8, offset=(0, 0), click_times=1, color=True):
+
+    def picture(self, png, threshold=0.8, offset=(0, 0), click_times=1, color=True, region=None):
         # 获取图片路径并加载图片
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-        # 自动添加 ".png" 扩展名，如果没有提供扩展名
         if not png.endswith('.png'):
             png += '.png'
 
@@ -357,20 +379,23 @@ class ImageTool:
             print(f"无法加载模板图片 '{png}'")
             return None
 
-        # 确保模板图像为 uint8 类型
         target = target.astype('uint8')
 
-        # 获取窗口截图
-        screenshot = self.action.window.capture_window()
+        # 获取窗口截图，调用 window.capture_window() 方法
+        screenshot = self.window.capture_window()
         if screenshot is None or screenshot.size == 0:
             print("窗口截图失败，无法进行匹配。")
             return None
 
-        # 将截图转换为NumPy数组
         screenshot = np.array(screenshot)
-        screenshot = screenshot.astype('uint8')  # 确保截图为 uint8 类型
+        screenshot = screenshot.astype('uint8')
 
-        # 如果是彩色图像，转换为BGR
+        # 如果指定了 region，裁剪截图
+        if region:
+            left, top, width, height = region
+            screenshot = screenshot[top:top + height, left:left + width]
+
+        # 进行模板匹配
         if color:
             screenshot_bgr = cv2.cvtColor(screenshot, cv2.COLOR_RGB2BGR)
             if screenshot_bgr.shape[0] < target.shape[0] or screenshot_bgr.shape[1] < target.shape[1]:
@@ -379,7 +404,7 @@ class ImageTool:
             result = cv2.matchTemplate(screenshot_bgr, target, cv2.TM_CCOEFF_NORMED)
         else:
             screenshot_gray = cv2.cvtColor(screenshot, cv2.COLOR_RGB2GRAY)
-            target_gray = cv2.cvtColor(target, cv2.COLOR_BGR2GRAY)  # 添加这行将目标图像转换为灰度
+            target_gray = cv2.cvtColor(target, cv2.COLOR_BGR2GRAY)
             if screenshot_gray.shape[0] < target_gray.shape[0] or screenshot_gray.shape[1] < target_gray.shape[1]:
                 print(f"截图小于模板图片 '{png}'，无法进行模板匹配。")
                 return None
@@ -397,13 +422,13 @@ class ImageTool:
 
             print(f"找到图片 '{png}'，坐标({x}, {y})，偏移 {offset}，点击 {click_times} 次")
             for _ in range(click_times):
-                self.action.click(x, y)
+                self.action.click(x, y)  # 调用 action 对象的 click 方法
             return x, y
         else:
-            print(f"未找到{png}")
+            print(f"没有找到图片 '{png}'")
             return None
 
-    def color(self, coordinates, target_color, tolerance=10):
+    def color(self, coordinates, target_color, tolerance=25):
         """
         判断多个指定位置的颜色是否为目标颜色，只要一个匹配成功就返回True。
         :param coordinates: 坐标列表，包含多个 (x, y) 元组
@@ -421,7 +446,7 @@ class ImageTool:
         screenshot = np.array(screenshot)
         screenshot = screenshot.astype('uint8')
 
-        for x, y in coordinates:
+        for (x, y) in coordinates:
             # 获取指定坐标的像素颜色
             pixel_color = screenshot[y, x]
 
@@ -484,7 +509,7 @@ class ImageTool:
 
         # 遍历识别到的文字坐标，查找目标文字
         for text, (center_x, center_y) in text_coordinates:
-            if text == target_text:
+            if target_text in text:
                 # 将截图坐标转换为全窗口坐标
                 global_x = center_x + x1
                 global_y = center_y + y1

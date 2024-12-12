@@ -1,22 +1,21 @@
-from libs.game import Game
-from libs.tool import ImageTool, Action, Window
 from libs.log import Log
+from libs.game import Game
+from libs.task import Task
+from libs.new import New
+from libs.tool import ImageTool, Action, Window
+from libs.scheduler import Scheduler
+
+window_id = "001"
+window = Window(window_id)
+log = Log(window_id)
+action = Action(window)
+image_tool = ImageTool(window, action)
+game = Game(window, image_tool, action, log)
+task = Task(window, image_tool, action, log)
+new = New(window, image_tool, action, game, log)
+scheduler = Scheduler(window_id, window, image_tool, action, log)
+game.enter_game()
 
 
-for window_id in ["002"]:
-    # 初始化窗口和动作实例
-    log = Log(window_id)
-    window = Window(window_id)
-    action = Action(window)
-    image_tool = ImageTool(action)
-    game = Game(image_tool, action, log, window_id)
-
-    # 打开窗口
-    window.open_window()
-
-
-
-
-    action.drag((80, 600), (80, 1200))
-
-
+# 以下是测试代码
+action.click(399, 735)
