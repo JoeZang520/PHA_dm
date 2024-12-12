@@ -1,8 +1,14 @@
 git add .
 
 git commit -am "update"
+
 git push origin main
+
+
+
 git push --force origin main
+
+git push origin main
 
 
 git fetch origin
