@@ -6,7 +6,7 @@ from libs.new import New
 from libs.tool import ImageTool, Action, Window
 from libs.scheduler import Scheduler
 
-window_id = "002"
+window_id = "004"
 window = Window(window_id)
 log = Log(window_id)
 action = Action(window)
@@ -19,4 +19,4 @@ game.enter_game()
 
 
 # 以下是测试代码
-task.collect_bag()
+task.underground()

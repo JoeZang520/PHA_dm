@@ -67,13 +67,13 @@ class Game:
     def enter_game(self, timeout=150):
         elapsed_time = 0
         while elapsed_time < timeout:
-            if self.image_tool.picture("maintain", click_times=0):
-                self.log.info("游戏维护")
-                self.window.close_window()
-                sys.exit(1)
             if self.in_game() or self.in_afk():  # 如果已经进入游戏
                 print("成功进入游戏")
                 return
+            else:
+                if self.image_tool.picture("PHA"):
+                    self.timer(60, "等待进游戏")
+                self.check_offline()
             print(f"等待进入游戏... ({elapsed_time}/{timeout} 秒)")
             time.sleep(10)  # 每秒检查一次
             elapsed_time += 10
@@ -110,12 +110,22 @@ class Game:
             self.log.info("游戏更新下载")
             self.timer(15, "等待额外数据包")
             self.image_tool.text("Additional data download", offset=(0, 140))
+            self.image_tool.text("更新")
             self.timer(60, "等待下载")
-        if self.image_tool.text("Additional data download", offset=(0, 140)):
-            self.log.info("游戏更新下载")
+            self.action.click(60, 150)  # 点击开始玩
+            self.timer(15, "等待画面加载")
+            self.image_tool.text("Additional data download", offset=(0, 140))
             self.timer(60, "等待下载")
 
-    # 将装备加入图鉴或者分解
+        if self.image_tool.text("Additional data download", offset=(0, 140)):
+            self.timer(60, "等待下载")
+        if self.image_tool.text("maintain", click_times=0):
+            self.log.info("游戏维护")
+            self.window.close_window()
+            sys.exit(1)
+
+
+            # 将装备加入图鉴或者分解
     def book(self, equip_number):
         # 初始点击项
         x_offset = -110 + (equip_number - 1) * 55  # 根据 equip_number 动态计算 x 坐标
@@ -184,9 +194,12 @@ class Game:
                             self.image_tool.picture("knife")
                             self.image_tool.picture("knife", offset=(0, -120))
                             print("分解装备")
-                            if self.image_tool.picture("salvage"):
-                                self.image_tool.picture("ruby", offset=(130, 930))  # 分解
-                                self.image_tool.picture("ruby", offset=(120, 550), click_times=2)  # 确认
+                            result = self.image_tool.picture("salvage")
+                            if result is not None:
+                                x, y = result
+                                self.action.click(x + 200, y + 110)  # 分解
+                                self.action.click(x + 190, y - 265)  # 确认
+                                self.action.click(x + 190, y - 265)  # 确认
                         else:
                             # 暂时将装备材料化，等待升级或卖掉
                             self.image_tool.picture("bag", offset=(230, -140))  # 设备材料化
@@ -206,9 +219,12 @@ class Game:
                     self.image_tool.picture("knife", offset=(0, -120))  # 随便点击空白处
                     # 分解装备
                     print("分解装备")
-                    if self.image_tool.picture("salvage"):
-                        self.image_tool.picture("ruby", offset=(130, 930))  # 分解
-                        self.image_tool.picture("ruby", offset=(120, 550), click_times=2)  # 确认
+                    result = self.image_tool.picture("salvage")
+                    if result is not None:
+                        x , y = result
+                        self.action.click(x + 200, y + 110)  # 分解
+                        self.action.click(x + 190, y - 265)  # 确认
+                        self.action.click(x + 190, y - 265)  # 确认
                 else:  # 该装备需要收藏
                     result = self.image_tool.picture("knife")
                     if result is not None:
@@ -230,13 +246,16 @@ class Game:
                         self.image_tool.picture("knife")
                         self.image_tool.picture("knife", offset=(0, -120))
                         print("分解装备")
-                        if self.image_tool.picture("salvage"):
-                            self.image_tool.picture("ruby", offset=(130, 930))  # 分解
-                            self.image_tool.picture("ruby", offset=(120, 550), click_times=2)  # 确认
+                        result = self.image_tool.picture("salvage")
+                        if result is not None:
+                            x, y = result
+                            self.action.click(x + 200, y + 110)  # 分解
+                            self.action.click(x + 190, y - 265)  # 确认
+                            self.action.click(x + 190, y - 265)  # 确认
 
             else:
                 break
-        self.image_tool.picture("100%", threshold=0.8, click_times=3)
+
 
 
     # 分解装备
@@ -289,6 +308,7 @@ class Game:
                         break
 
     def switch_rarity(self, window_id):
+        self.image_tool.text("自动技能")
         text_list = ["稀有", "史诗", "关闭", "普通"]
         # 检查目标图像是否在列表中
         target_text = config.afk(window_id)
@@ -367,14 +387,14 @@ class Game:
     def collect_diamond(self):
         for _ in range(3):
             self.image_tool.picture("100%", threshold=0.8, click_times=2)
-
-        self.image_tool.picture("bag", offset=(-100,0))
-        for i in range(1, 7):
-            self.book(i)
+        if (self.image_tool.text("升级")
+            or self.image_tool.text("装备拆装")):
+            self.image_tool.picture("bag", offset=(-100, 0))
+            for i in range(1, 7):
+                self.book(i)
+        self.image_tool.picture("100%", threshold=0.8, click_times=3)
         self.image_tool.picture("bag", offset=(-100, 0))
         self.grow()
-
-
 
     def boss(self):
         self.wait_page_loaded()

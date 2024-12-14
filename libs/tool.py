@@ -196,47 +196,61 @@ class Window:
         """截取窗口内容"""
         if not self.is_bound:
             if not self.bind_window():
-                print("绑定失败，无法执行点击操作")
+                print("绑定失败，无法执行截取操作")
                 return
 
-        # 获取窗口的客户端区域坐标
-        left, top, right, bottom = win32gui.GetClientRect(self.game_hwnd)
-        width = right - left  # 截取区域的宽度
-        height = bottom - top  # 截取区域的高度
+        # 检查窗口句柄是否有效，如果无效，尝试重新绑定
+        if not self.game_hwnd or not win32gui.IsWindow(self.game_hwnd):
+            print("窗口句柄无效，尝试重新绑定窗口")
+            self.close_window()  # 关闭无效窗口
+            if not self.bind_window():  # 重新绑定窗口
+                print("重新绑定失败，无法执行后续操作")
+                return
 
-        # 如果提供了 region 参数，则使用指定区域的坐标和大小
-        if region:
-            x1, y1, w, h = region
-            left = left + x1  # 相对窗口的左上角坐标
-            top = top + y1
-            width = w
-            height = h
+        try:
+            # 获取窗口的客户端区域坐标
+            left, top, right, bottom = win32gui.GetClientRect(self.game_hwnd)
+            width = right - left  # 截取区域的宽度
+            height = bottom - top  # 截取区域的高度
 
-        hdc = win32gui.GetDC(self.game_hwnd)
-        mem_dc = win32gui.CreateCompatibleDC(hdc)
-        bitmap = win32gui.CreateCompatibleBitmap(hdc, width, height)
+            # 如果提供了 region 参数，则使用指定区域的坐标和大小
+            if region:
+                x1, y1, w, h = region
+                left = left + x1  # 相对窗口的左上角坐标
+                top = top + y1
+                width = w
+                height = h
 
-        win32gui.SelectObject(mem_dc, bitmap)
-        win32gui.BitBlt(mem_dc, 0, 0, width, height, hdc, left, top, win32con.SRCCOPY)
+            hdc = win32gui.GetDC(self.game_hwnd)
+            mem_dc = win32gui.CreateCompatibleDC(hdc)
+            bitmap = win32gui.CreateCompatibleBitmap(hdc, width, height)
 
-        bmp_header = win32gui.GetObject(bitmap)
-        buffer_size = bmp_header.bmWidthBytes * bmp_header.bmHeight
-        bits = ctypes.create_string_buffer(buffer_size)
+            win32gui.SelectObject(mem_dc, bitmap)
+            win32gui.BitBlt(mem_dc, 0, 0, width, height, hdc, left, top, win32con.SRCCOPY)
 
-        hdc_win32 = ctypes.windll.gdi32.GetBitmapBits
-        hdc_win32.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p]
-        hdc_win32(bitmap.handle, buffer_size, bits)
+            bmp_header = win32gui.GetObject(bitmap)
+            buffer_size = bmp_header.bmWidthBytes * bmp_header.bmHeight
+            bits = ctypes.create_string_buffer(buffer_size)
 
-        img = Image.frombuffer('RGB', (bmp_header.bmWidth, bmp_header.bmHeight), bits, 'raw', 'BGRX', 0, 1)
+            hdc_win32 = ctypes.windll.gdi32.GetBitmapBits
+            hdc_win32.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p]
+            hdc_win32(bitmap.handle, buffer_size, bits)
 
-        # 将左上角100x100区域的像素设置为黑色（这部分可以去掉或根据需求修改）
-        img.paste((0, 0, 0), (0, 0, 100, 30))  # 设置左上角区域为黑色
+            img = Image.frombuffer('RGB', (bmp_header.bmWidth, bmp_header.bmHeight), bits, 'raw', 'BGRX', 0, 1)
 
-        win32gui.DeleteObject(bitmap)
-        win32gui.DeleteDC(mem_dc)
-        win32gui.ReleaseDC(self.game_hwnd, hdc)
+            # 将左上角100x100区域的像素设置为黑色（这部分可以去掉或根据需求修改）
+            img.paste((0, 0, 0), (0, 0, 100, 30))  # 设置左上角区域为黑色
 
-        return img
+            # 清理资源
+            win32gui.DeleteObject(bitmap)
+            win32gui.DeleteDC(mem_dc)
+            win32gui.ReleaseDC(self.game_hwnd, hdc)
+
+            return img
+
+        except Exception as e:
+            print(f"截图失败: {e}")
+            return None
 
 
 class Action:

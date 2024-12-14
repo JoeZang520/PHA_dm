@@ -25,13 +25,13 @@ def pha(window_id):
             image_tool.text("退出睡眠")
             game.collect_diamond()
             scheduler.pending_task()
-            image_tool.text("自动休眠")
+            action.click(40, 275)  # 点击自动休眠
             game.switch_rarity(window_id)
         else:
             game.choose_map()
             game.collect_diamond()
             scheduler.pending_task()
-            image_tool.text("自动休眠")
+            action.click(40, 275)  # 点击自动休眠
             game.switch_rarity(window_id)
 
         game.timer(cycle_time, "等待下一次循环")  # 5 分钟，单位：秒

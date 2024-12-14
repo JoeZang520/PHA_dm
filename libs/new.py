@@ -25,6 +25,7 @@ class New:
         self.image_tool.text("退出睡眠")
         self.game.handle_dialog()
         self.game.choose_map()
+        self.game.collect_diamond()
         for _ in range(10):
             for _ in range(3):
                 self.image_tool.picture("bag", offset=(250, -900))  # 点击地图旁边的向右箭头，确保进入到最新的图
@@ -37,6 +38,7 @@ class New:
                     time.sleep(3)
                     self.game.boss()
             if self.image_tool.text("移动时"):
+                self.action.click(40, 275)  # 点击自动休眠
                 break
             self.image_tool.picture("left")
             self.image_tool.picture("right")
@@ -51,7 +53,7 @@ class New:
             self.image_tool.picture("X")
             self.action.click(20, 20)
             self.action.click(20, 20)
-
+        self.action.click(40, 275)  # 点击自动休眠
 
 
 

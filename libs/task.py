@@ -104,22 +104,47 @@ class Task:
                 break
 
         self.image_tool.picture("ruby", offset=(-155, 450))  # toyz碎片
+
         for _ in range(3):
-            for _ in range(10):
-                if self.image_tool.picture("toyz_shard", color=False):
-                    self.action.click(325, 350)  # 块合成
-                    if self.image_tool.color([(330, 720)], (177, 230, 151), tolerance=20):
-                        self.action.click(330, 720)
-                        time.sleep(5)
-                        self.action.click(330, 720), self.action.click(330, 720)
-                    else:
-                        break
+            if self.image_tool.picture("toyz_purple", color=False):
+                self.action.click(325, 350)  # 块合成
+                if self.image_tool.color([(330, 720)], (177, 230, 151), tolerance=20):
+                    self.action.click(330, 720)  # 确认
+                    time.sleep(5)
+                    self.action.click(330, 720), self.action.click(330, 720)  # 确认
+                else:
+                    self.action.click(330, 800)  # 空白
+                    break
+            time.sleep(1)
+
+        for _ in range(5):
+            if self.image_tool.picture("toyz_green", color=False):
+                self.action.click(325, 350)  # 块合成
+                if self.image_tool.color([(330, 720)], (177, 230, 151), tolerance=20):
+                    self.action.click(330, 720)  # 确认
+                    time.sleep(5)
+                    self.action.click(330, 720), self.action.click(330, 720)  # 确认
+                else:
+                    self.action.click(330, 800)  # 空白
+                    break
+            time.sleep(1)
+
+        for _ in range(10):
+            if self.image_tool.picture("toyz_white", color=False):
+                self.action.click(325, 350)  # 块合成
+                if self.image_tool.color([(330, 720)], (177, 230, 151), tolerance=20):
+                    self.action.click(330, 720)  # 确认
+                    time.sleep(5)
+                    self.action.click(330, 720), self.action.click(330, 720)  # 确认
+                else:
+                    self.action.click(330, 800)  # 空白
+                    break
+            time.sleep(1)
+
         self.action.click(20, 20)
         self.action.click(20, 20)
 
     def toyz(self):
-        if self.image_tool.picture("lock", click_times=0):
-            return
         self.log.info("放置Toyz")
         self.image_tool.picture("bag", offset=(200, 0)), time.sleep(2)
         self.image_tool.picture("bag", offset=(340, -735)), time.sleep(2)
@@ -158,7 +183,7 @@ class Task:
         result = self.image_tool.text("套餐商店")
         if result is not None:
             x, y = result
-            self.action.click(x - 270, y - 620)  # 日常套餐
+            self.action.click(x - 270, y - 670)  # 日常套餐
             if not self.image_tool.text("SOLDOUT"):
                 self.action.click(x - 80, y - 580)  # Free
                 self.action.click(x + 30, y - 340)  # 购买
@@ -166,8 +191,6 @@ class Task:
         self.image_tool.picture("X")
 
     def rome(self):
-        if self.image_tool.picture("lock", click_times=0):
-            return
         self.log.info("罗马竞技场")
         clicks = [
             (100, 0),  # 战斗
@@ -182,15 +205,15 @@ class Task:
             target_position = (base_position[0] + offset[0], base_position[1] + offset[1])
             self.action.click(*target_position)
 
-        self.image_tool.text("战斗准备")
-        if not self.image_tool.text("0/1"):
-            self.image_tool.text("入口")
-            for _ in range(15):
-                self.image_tool.text("重试")
-                time.sleep(3)
-                if self.image_tool.text("确认"):
-                    break
-                self.timer(10, "等待下一次找重试")
+        if self.image_tool.text("战斗准备"):
+            if not self.image_tool.text("0/1"):
+                self.image_tool.text("入口")
+                for _ in range(15):
+                    self.image_tool.text("重试")
+                    time.sleep(3)
+                    if self.image_tool.text("确认"):
+                        break
+                    self.timer(10, "等待下一次找重试")
         self.action.click(20, 20)
         self.action.click(20, 20)
 
@@ -205,26 +228,20 @@ class Task:
 
     def enter_underground(self):
         if not self.image_tool.picture("ad1", click_times=0,
-                                       region=(0, 600, 500, 300)) and self.image_tool.text("入口", region=(
-                0, 600, 580, 300)):
+                                       region=(0, 600, 500, 300)):
+            self.action.click(470, 810)
             self.move_underground()
-            if not self.image_tool.picture("ad2", click_times=0):
-                if self.image_tool.text("确认"):
+            for _ in range(5):
+                if self.image_tool.picture("ad2", offset=(-210, 0)):
+                    self.image_tool.picture("exit")
+                    time.sleep(2)
+                    self.image_tool.text("出口")
+                    self.wait_page_loaded()
+                    break
+                else:
+                    self.image_tool.text("确认")
                     self.move_underground()
-                if not self.image_tool.picture("ad2", click_times=0):
-                    if self.image_tool.text("确认"):
-                        self.move_underground()
-                    if not self.image_tool.picture("ad2", click_times=0):
-                        if self.image_tool.text("确认"):
-                            self.move_underground()
-            else:
-                self.image_tool.text("出口")
-                self.image_tool.text("出口")
-                self.action.click(20, 20)
-                self.action.click(20, 20)
-                self.image_tool.picture("exit")
-                self.wait_page_loaded()
-                time.sleep(5)
+
 
 
     def underground(self):
@@ -250,8 +267,6 @@ class Task:
 
 
     def collect_afk(self):
-        if self.image_tool.picture("lock", click_times=0):
-            return
         self.log.info("领AFK奖励")
         clicks = [
             (400, -640),  # 左箭头
