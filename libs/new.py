@@ -40,14 +40,14 @@ class New:
             if self.image_tool.text("移动时"):
                 self.action.click(40, 275)  # 点击自动休眠
                 break
-            self.image_tool.picture("left")
-            self.image_tool.picture("right")
             self.image_tool.text("指引任务", offset=(0, 90), click_times=4)
             self.image_tool.text("莉迪亚", offset=(0, 80), click_times=3)
             if not self.image_tool.picture("ad2", offset=(-80, 0)):
                 self.image_tool.text("确认", click_times=2)
             self.image_tool.text("消除", offset=(175, 0))  # 点击确认 防止npc文字中包含”确认“两个字
             self.image_tool.text("审查", offset=(-175, 0))  # 点击取消
+            self.image_tool.picture("left")
+            self.image_tool.picture("right")
             for _ in range(4):
                 self.image_tool.picture("hand", threshold=0.95, offset=(0, 40))
             self.image_tool.picture("X")

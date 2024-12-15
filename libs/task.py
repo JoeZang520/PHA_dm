@@ -196,6 +196,7 @@ class Task:
             (100, 0),  # 战斗
             (200, -75),  # 地下城
             (0, -770),  # 单人地下城
+            (220, -450),  # 战斗准备
         ]
         base_position = self.image_tool.picture("bag", click_times=0)
         if base_position is None:
@@ -205,31 +206,36 @@ class Task:
             target_position = (base_position[0] + offset[0], base_position[1] + offset[1])
             self.action.click(*target_position)
 
-        if self.image_tool.text("战斗准备"):
-            if not self.image_tool.text("0/1"):
-                self.image_tool.text("入口")
+        if self.image_tool.text("入口"):
+            time.sleep(2)
+            if self.image_tool.picture("ruby"):
+                self.esc()
+                return
+            else:
                 for _ in range(15):
-                    self.image_tool.text("重试")
-                    time.sleep(3)
-                    if self.image_tool.text("确认"):
-                        break
-                    self.timer(10, "等待下一次找重试")
-        self.action.click(20, 20)
-        self.action.click(20, 20)
+                    if not self.image_tool.picture("ad2", click_times=0):
+                        self.image_tool.text("重试")
+                        time.sleep(2)
+                        if self.image_tool.picture("ruby"):
+                            self.image_tool.text("确认")
+                            return
+                        self.timer(10, "等待下一次找重试")
+        self.esc()
 
     def move_underground(self):
         self.wait_page_loaded()
-        self.action.press("A", second=3)
-        self.action.press("S", second=3)
-        self.action.press("D", second=5)
-        self.action.press("W", second=5)
-        self.action.press("A", second=5)
+        self.action.press("A", second=2)
+        self.action.press("S", second=2)
+        self.action.press("D", second=4)
+        self.action.press("W", second=4)
+        self.action.press("A", second=4)
         time.sleep(5)
 
     def enter_underground(self):
         if not self.image_tool.picture("ad1", click_times=0,
                                        region=(0, 600, 500, 300)):
-            self.action.click(470, 810)
+            self.image_tool.text("入口", region=(0, 600, 500, 300))
+            self.action.click(470, 810)  # 入口
             self.move_underground()
             for _ in range(5):
                 if self.image_tool.picture("ad2", offset=(-210, 0)):

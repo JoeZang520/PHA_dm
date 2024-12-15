@@ -357,7 +357,7 @@ class Action:
         # 模拟鼠标按下
         dm.MoveTo(start_x, start_y)
         dm.LeftDown()  # 按下左键
-        print("dragging start")
+        print("dragging")
         # 逐步滑动鼠标
         for i in range(steps + 1):
             current_x = int(start_x + delta_x * i)
@@ -369,7 +369,6 @@ class Action:
         # 模拟鼠标释放
         dm.LeftUp()  # 释放左键
         time.sleep(0.5)
-        print("dragging end")
 
 
 

@@ -6,7 +6,7 @@ from libs.new import New
 from libs.tool import ImageTool, Action, Window
 from libs.scheduler import Scheduler
 
-window_id = "004"
+window_id = "003"
 window = Window(window_id)
 log = Log(window_id)
 action = Action(window)

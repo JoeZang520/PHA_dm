@@ -67,9 +67,17 @@ class Game:
     def enter_game(self, timeout=150):
         elapsed_time = 0
         while elapsed_time < timeout:
-            if self.in_game() or self.in_afk():  # 如果已经进入游戏
-                print("成功进入游戏")
-                return
+            if self.in_game() or self.in_afk():
+                result = self.image_tool.text("与服务器的连接已丢失。")
+                if result is not None:
+                    self.log.info("掉线")
+                    x, y = result
+                    self.action.click(x, y + 100)
+                    self.action.click(x, y + 165)
+                    self.timer(60, "等待重连进游戏")
+                else:
+                    print("成功进入游戏")
+                    return
             else:
                 if self.image_tool.picture("PHA"):
                     self.timer(60, "等待进游戏")
@@ -88,7 +96,7 @@ class Game:
         if not self.in_afk():
             self.timer(10, "等待弹窗加载")
             for _ in range(3):
-                self.image_tool.text("Pixel", offset=(260, 0))
+                self.image_tool.text("Heroes", offset=(260, 0))
                 time.sleep(3)
             self.image_tool.text("确认", click_times=2)
             self.image_tool.text("月度签到", offset=(0, 470), click_times=3)
@@ -101,7 +109,7 @@ class Game:
         print("check_offline")
         result = self.image_tool.text("与服务器的连接已丢失。")
         if result is not None:
-            self.log.info("网络错误")
+            self.log.info("掉线")
             x , y = result
             self.action.click(x, y + 100)
             self.action.click(x, y + 165)
