@@ -5,6 +5,36 @@ from libs.new import New
 from libs.tool import ImageTool, Action, Window
 from libs.scheduler import Scheduler
 import multiprocessing
+import time
+import subprocess
+import os
+
+
+def timer(seconds, window_id):
+    for remaining in range(seconds, -1, -1):
+        print(f"\r{window_id} 倒计时: {remaining} 秒", end="")  # 显示倒计时在同一行
+        time.sleep(1)  # 等待 1 秒
+    print(f"\n")  # 换行并打印结束信息
+
+def launch_ocr():
+    project_dir = os.path.abspath(os.path.dirname(__file__))  # 当前脚本所在目录
+    ocr_exe_path = os.path.join(project_dir, "OCR", "OCR.exe")  # 项目主目录 + OCR文件夹 + OCR.exe
+
+    # 打印检查路径是否正确
+    print("OCR 程序路径：", ocr_exe_path)
+
+    # 确保 OCR.exe 存在
+    if not os.path.exists(ocr_exe_path):
+        raise FileNotFoundError(f"找不到 OCR 程序文件：{ocr_exe_path}")
+
+    # 直接打开 OCR.exe
+    try:
+        subprocess.Popen([ocr_exe_path], cwd=os.path.dirname(ocr_exe_path))  # 打开程序
+        print("OCR 程序已打开！")
+    except FileNotFoundError:
+        print(f"无法找到文件：{ocr_exe_path}")
+    except Exception as e:
+        print(f"程序运行失败：{e}")
 
 def pha(window_id):
     window = Window(window_id)
@@ -13,33 +43,44 @@ def pha(window_id):
     image_tool = ImageTool(window, action)
     game = Game(window, image_tool, action, log)
     new = New(window, image_tool, action, game, log)
-    scheduler = Scheduler(window_id,  window, image_tool, action, log)
+    scheduler = Scheduler(window_id, window, image_tool, action, game, log)
+
+    if not game.enter_game():
+        return
+    game.handle_dialog()
+    game.choose_map()
+    game.collect_diamond()
+
+    # 如果是新任务，执行新手引导任务
+    if config.is_new(window_id):
+        new.task_guide()
+
+    # 执行每日任务
+    scheduler.pending_task(window_id)
+    action.click(40, 275)  # 点击自动休眠
+    game.switch_rarity(window_id)
+
+
+if __name__ == "__main__":
+    # 启动 OCR.exe
+    launch_ocr()
+    # 获取所有账户的 window_id
+    accounts = config.get_accounts()
     cycle_time = config.get_cycle_time()
 
     while True:
-        game.enter_game()
-        game.handle_dialog()
-        if config.is_new(window_id):
-            new.task_guide()
-        if game.in_afk():
-            image_tool.text("退出睡眠")
-            game.collect_diamond()
-            scheduler.pending_task()
-            action.click(40, 275)  # 点击自动休眠
-            game.switch_rarity(window_id)
-        else:
-            game.choose_map()
-            game.collect_diamond()
-            scheduler.pending_task()
-            action.click(40, 275)  # 点击自动休眠
-            game.switch_rarity(window_id)
+        # 每次循环都重新创建进程池
+        with multiprocessing.Pool() as pool:
+            for window_id in accounts:
+                pool.apply_async(pha, (window_id,))
+                timer(cycle_time, window_id)
+            pool.close()  # 不再接受新任务
+            pool.join()  # 等待所有进程完成
 
-        game.timer(cycle_time, "等待下一次循环")  # 5 分钟，单位：秒
 
-if __name__ == "__main__":
-    # 获取所有账户的 window_id
-    accounts = config.get_accounts()
 
-    # 创建一个进程池来并行处理多个窗口
-    with multiprocessing.Pool(processes=len(accounts)) as pool:
-        pool.map(pha, accounts.keys())  # 遍历所有账户并执行任务
+
+
+
+
+

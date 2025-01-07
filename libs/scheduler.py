@@ -6,25 +6,27 @@ from datetime import datetime
 
 
 class Scheduler:
-    def __init__(self, window_id, window, image_tool, action, log, interval=3600, last_run=None):
+    def __init__(self, window_id, window, image_tool, action, game, log, interval=3600, last_run=None):
         self.window_id = window_id
         self.window = window
         self.log = log
         self.image_tool = image_tool
         self.action = action
-        self.task = Task(window, image_tool, action, log)
+        self.task = Task(window, window_id, image_tool, action, game, log)
         self.is_new = config.is_new(window_id)
         self.pending = self.load_pending("logs/pending.json")
         self.last_run = last_run  # 可设定为默认的时间戳
         self.interval = interval  # 默认1小时（3600秒）
         self.tasks = {
+            "task_48": 48 * 60 * 60,  # 48 hours
             "task_24": 24 * 60 * 60,  # 24 hours
             "task_12": 12 * 60 * 60,  # 12 hours
             "task_5": 5 * 60 * 60,  # 5 hours
             "task_2": 2 * 60 * 60,  # 2 hours
         }
 
-    def load_pending(self, file_path):
+    @staticmethod
+    def load_pending(file_path):
         """加载任务状态"""
         try:
             with open(file_path, "r") as f:
@@ -32,7 +34,8 @@ class Scheduler:
         except FileNotFoundError:
             return {}
 
-    def save_pending(self, file_path, state):
+    @staticmethod
+    def save_pending(file_path, state):
         """保存任务状态，并将时间格式保持为 ISO 8601 字符串"""
         for window_id, tasks in state.items():
             for task_name, task_info in tasks.items():
@@ -57,12 +60,12 @@ class Scheduler:
         self.pending[self.window_id] = task_status
         self.save_pending("logs/pending.json", self.pending)
 
-    def retry_failed_tasks(self):
+    def retry_failed_tasks(self, window_id):
         """重新尝试失败的任务"""
         for task_name, task_info in self.pending.get(self.window_id, {}).items():
             if task_info["status"] == "failed":
                 print(f"重新尝试任务 {task_name}...")
-                self.task.perform(task_name)
+                self.task.execute(task_name, window_id)
 
     def has_pending_tasks(self):
         """检查是否有待执行的任务"""
@@ -79,7 +82,7 @@ class Scheduler:
             return True
         return False
 
-    def pending_task(self):
+    def pending_task(self, window_id):
         """运行调度任务"""
         print(f"开始调度任务，窗口 ID：{self.window_id}")
 
@@ -103,7 +106,7 @@ class Scheduler:
                 print(f"任务 {task_name} 超过时间间隔或失败，准备执行...")
                 try:
                     # 执行任务
-                    self.task.perform(task_name)
+                    self.task.execute(task_name, window_id)
                     self.task.esc()
                     # 任务执行成功后更新任务状态
                     self.set_task_status(task_name, "completed")
@@ -115,7 +118,7 @@ class Scheduler:
                 print(f"任务 {task_name} 没有达到执行条件，状态：{status}")
 
         # 任务检查和重试失败任务
-        self.retry_failed_tasks()
+        self.retry_failed_tasks(window_id)
         self.action.click(20, 20)
         self.action.click(20, 20)
 

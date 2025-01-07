@@ -4,16 +4,17 @@ import libs.config as config
 
 
 class Task:
-    def __init__(self, window, image_tool, action, log):
+    def __init__(self, window, window_id, image_tool, action, game, log):
         self.image_tool = image_tool
         self.action = action
         self.window = window
+        self.window_id = window_id
+        self.game = game
         self.log = log
         self.config = config
 
     @staticmethod
     def timer(seconds, activity_name):
-        print("timer")  # 提示倒计时开始
         for remaining in range(seconds, -1, -1):
             print(f"\r{activity_name} 倒计时: {remaining} 秒", end="")  # 显示倒计时在同一行
             time.sleep(1)  # 等待 1 秒
@@ -53,6 +54,7 @@ class Task:
 
 
     def collect_mail(self):
+        self.log.info("领取邮件")
         self.image_tool.picture("mail")
         for _ in range(4):
             self.image_tool.text("收到", click_times=2)
@@ -60,6 +62,7 @@ class Task:
         self.action.click(20, 20)
 
     def collect_task(self):
+        self.log.info("领取任务奖励")
         clicks = [
             (410, -790),  # 寻求
             (-20, -750),  # 每日任务
@@ -69,8 +72,6 @@ class Task:
             (330, -140),  # 全部接收
             (330, -140),  # 全部接收
             (320, -750),  # 重复任务
-            (330, -140),  # 全部接收
-            (330, -140),  # 全部接收
             (330, -140),  # 全部接收
             (330, -140),  # 全部接收
             (330, -140),  # 全部接收
@@ -87,6 +88,7 @@ class Task:
         self.action.click(20, 20)
 
     def collect_bag(self):
+        self.log.info("领取背包物品")
         self.image_tool.picture("ruby", offset=(-110, 960))  # 背包
         self.image_tool.picture("ruby", offset=(-160, 890))  # 其它物品
         self.image_tool.picture("ruby", offset=(-215, 450))  # 箱子
@@ -148,47 +150,86 @@ class Task:
         self.log.info("放置Toyz")
         self.image_tool.picture("bag", offset=(200, 0)), time.sleep(2)
         self.image_tool.picture("bag", offset=(340, -735)), time.sleep(2)
-        if (self.image_tool.picture("+", click_times=1)
-                or self.image_tool.text("领取", click_times=2)):
-            self.image_tool.picture("+", click_times=1)
 
-            result = self.image_tool.picture("ruby", click_times=0)
-            if result is not None:
-                x, y = result
-                self.action.click(x - 155, y + 655), self.action.click(x - 155, y + 653)  # 选取第0个
-                self.image_tool.picture("toyz_grey")  # 放置第0个
-                self.action.click(x - 155 + 100, y + 655), self.action.click(x - 155 +100, y + 655)  # 选取第1个
-                self.image_tool.picture("toyz_grey")  # 放置第1个
-                self.action.click(x - 155 + 200, y + 655), self.action.click(x - 155 +200, y + 655)  # 选取第2个
-                self.image_tool.picture("toyz_grey")  # 放置第2个
-                self.action.click(x - 155 + 300, y + 655), self.action.click(x - 155 +300, y + 655)  # 选取第3个
-                self.image_tool.picture("toyz_grey")  # 放置第3个
-                self.action.click(x - 155 + 400, y + 655), self.action.click(x - 155 + 400, y + 655)  # 选取第4个
-                self.image_tool.picture("toyz_grey")  # 放置第4个
-                self.action.click(x - 155 +50, y + 655 + 70), self.action.click(x - 155 +50, y + 655 + 70)  # 选取第5个
-                self.image_tool.picture("toyz_grey")  # 放置第5个
-                self.action.click(x - 155 + 150, y + 655 + 70), self.action.click(x - 155 + 150, y + 655 + 70)  # 选取第6个
-                self.image_tool.picture("toyz_grey")  # 放置第6个
+        for _ in range(2):
+            if (self.image_tool.text("领取", click_times=2)
+                    or self.image_tool.picture("+", click_times=1)):
+                self.image_tool.picture("+", click_times=1)
 
-                self.action.click(x + 125, y + 960), time.sleep(2)  # 确认
-                self.image_tool.text("开始ToyZ")
+                result = self.image_tool.picture("ruby", click_times=0)
+                if result is not None:
+                    x, y = result
+                    self.action.click(x - 155, y + 655), self.action.click(x - 155, y + 653)  # 选取第0个
+                    self.image_tool.picture("toyz_grey")  # 放置第0个
+                    self.action.click(x - 155 + 100, y + 655), self.action.click(x - 155 + 100, y + 655)  # 选取第1个
+                    self.image_tool.picture("toyz_grey")  # 放置第1个
+                    self.action.click(x - 155 + 200, y + 655), self.action.click(x - 155 + 200, y + 655)  # 选取第2个
+                    self.image_tool.picture("toyz_grey")  # 放置第2个
+                    self.action.click(x - 155 + 300, y + 655), self.action.click(x - 155 + 300, y + 655)  # 选取第3个
+                    self.image_tool.picture("toyz_grey")  # 放置第3个
+                    self.action.click(x - 155 + 400, y + 655), self.action.click(x - 155 + 400, y + 655)  # 选取第4个
+                    self.image_tool.picture("toyz_grey")  # 放置第4个
+                    self.action.click(x - 155 + 50, y + 655 + 70), self.action.click(x - 155 + 50,
+                                                                                     y + 655 + 70)  # 选取第5个
+                    self.image_tool.picture("toyz_grey")  # 放置第5个
+                    self.action.click(x - 155 + 150, y + 655 + 70), self.action.click(x - 155 + 150,
+                                                                                      y + 655 + 70)  # 选取第6个
+                    self.image_tool.picture("toyz_grey")  # 放置第6个
 
-
+                    self.action.click(x + 125, y + 960), time.sleep(2)  # 确认
+                    self.image_tool.text("开始ToyZ")
+                    self.image_tool.text("开始ToyZ", offset=(0, 300))
+                    time.sleep(3)
         self.action.click(20, 20)  # 返回主界面
 
 
     def free_diamond(self):
         self.log.info("领每日免费宝石")
         self.image_tool.picture("bag", offset=(400, 0))
+        time.sleep(2)
+        self.image_tool.text("确认")
         result = self.image_tool.text("套餐商店")
         if result is not None:
             x, y = result
-            self.action.click(x - 270, y - 670)  # 日常套餐
+            self.image_tool.text("日常套餐")
             if not self.image_tool.text("SOLDOUT"):
                 self.action.click(x - 80, y - 580)  # Free
                 self.action.click(x + 30, y - 340)  # 购买
                 self.action.click(x - 65, y - 435)  # 确认
         self.image_tool.picture("X")
+
+    def free_diamond_7(self):
+        self.log.info("领每周免费宝石")
+        self.image_tool.picture("bag", offset=(400, 0))
+        time.sleep(2)
+        self.image_tool.text("确认")
+        result = self.image_tool.text("套餐商店")
+        if result is not None:
+            x, y = result
+            self.image_tool.text("周套餐")
+            time.sleep(2)
+            if not self.image_tool.text("SOLOOUT"):
+                self.action.click(x - 80, y - 580)  # Free
+                self.action.click(x + 30, y - 340)  # 购买
+                self.action.click(x - 65, y - 435)  # 确认
+        self.image_tool.picture("X")
+
+    def strength(self):
+        self.image_tool.picture("ruby", offset=(185, 960))  # 图鉴
+        time.sleep(2)
+        self.image_tool.text("怪物")
+        time.sleep(2)
+        for i in range(6):  # 一共执行6次
+            click_x = 50 + (i * 65)  # 每次点击位置的X坐标增加65
+            self.action.click(click_x, 40)  # 执行点击
+            for _ in range(30):
+                if self.image_tool.color([(500, 185)], (177, 230, 151), tolerance=20):
+                    self.action.click(500, 185)  # 强化
+                    self.action.click(380, 580)  # 确认
+                    time.sleep(1)
+                else:
+                    break
+        self.game.esc()
 
     def rome(self):
         self.log.info("罗马竞技场")
@@ -206,23 +247,22 @@ class Task:
             target_position = (base_position[0] + offset[0], base_position[1] + offset[1])
             self.action.click(*target_position)
 
+        time.sleep(2)
         if self.image_tool.text("入口"):
-            time.sleep(2)
-            if self.image_tool.picture("ruby"):
+            if not self.game.wait_battle_start(max_wait_time=15):
                 self.esc()
                 return
-            else:
-                for _ in range(15):
-                    if not self.image_tool.picture("ad2", click_times=0):
-                        self.image_tool.text("重试")
-                        time.sleep(2)
-                        if self.image_tool.picture("ruby"):
-                            self.image_tool.text("确认")
-                            return
-                        self.timer(10, "等待下一次找重试")
+            for _ in range(15):
+                if not self.image_tool.picture("ad2", click_times=0):
+                    self.image_tool.text("重试")
+                    if not self.game.wait_battle_start(max_wait_time=15):
+                        self.image_tool.text("确认")
+                        self.game.wait_page_loaded()
+                        return
+                self.timer(30, "等待下一次找重试")
         self.esc()
 
-    def move_underground(self):
+    def move_in_solo_dungeon(self):
         self.wait_page_loaded()
         self.action.press("A", second=2)
         self.action.press("S", second=2)
@@ -231,12 +271,12 @@ class Task:
         self.action.press("A", second=4)
         time.sleep(5)
 
-    def enter_underground(self):
+    def enter_dungeon(self):
         if not self.image_tool.picture("ad1", click_times=0,
                                        region=(0, 600, 500, 300)):
             self.image_tool.text("入口", region=(0, 600, 500, 300))
             self.action.click(470, 810)  # 入口
-            self.move_underground()
+            self.move_in_solo_dungeon()
             for _ in range(5):
                 if self.image_tool.picture("ad2", offset=(-210, 0)):
                     self.image_tool.picture("exit")
@@ -246,30 +286,61 @@ class Task:
                     break
                 else:
                     self.image_tool.text("确认")
-                    self.move_underground()
+                    self.move_in_solo_dungeon()
 
 
 
-    def underground(self):
-        self.log.info("地下城")
+    def solo_dungeon(self):
+        self.log.info("单人地下城")
         self.switch("auto_green")
         for _ in range(2):
             self.image_tool.picture("bag", offset=(100, 0))
-            self.image_tool.text("地下城")
-            self.image_tool.text("单人地下城")
-            if self.image_tool.text("012", region=(0, 600, 500, 300)) \
-                    or self.image_tool.text("0/2", region=(0, 600, 500, 300)):
-                self.action.drag((300, 700), (300, 300))
+            if self.image_tool.text("地下城"):
+                self.image_tool.text("单人地下城")
                 if self.image_tool.text("012", region=(0, 600, 500, 300)) \
                         or self.image_tool.text("0/2", region=(0, 600, 500, 300)):
-                    self.action.click(20, 20)
-                    self.switch("auto_red")
-                    return
+                    self.action.drag((300, 700), (300, 300))
+                    if self.image_tool.text("012", region=(0, 600, 500, 300)) \
+                            or self.image_tool.text("0/2", region=(0, 600, 500, 300)):
+                        self.esc()
+                    else:
+                        self.enter_dungeon()
                 else:
-                    self.enter_underground()
-            else:
-                self.enter_underground()
+                    self.enter_dungeon()
+        self.image_tool.picture("exit")
+        self.image_tool.text("出口")
+        self.wait_page_loaded()
         self.switch("auto_red")
+
+
+    def party_dungeon(self, window_id):
+        dungeon = config.dungeon(window_id)
+        if dungeon == "None":
+            print("no dungeon")
+            return
+        for _ in range(5):
+            self.log.info("团队地下城")
+            self.switch("auto_green")
+            self.image_tool.picture("bag", offset=(100, 0))
+            self.image_tool.text("地下城")
+            self.image_tool.text("团队地下城")
+            if dungeon in ["冰霜地牢", "蘑菇王地牢"]:
+                self.action.drag((300, 830), (300, 430))
+            if dungeon in ["寄主蘑菇地牢", "布里斯托尔地牢"]:
+                self.action.drag((300, 830), (300, 430))
+                self.action.drag((300, 830), (300, 430))
+            self.image_tool.text(dungeon, offset=(350, 110))
+            self.image_tool.text("入口")
+            self.image_tool.text("队伍查询", offset=(170, 0))  # 点击创建队伍
+            self.image_tool.text("关闭", offset=(170, 0))  # 点击创建队伍
+            self.image_tool.text("入口")
+            if self.image_tool.text("确认"):
+                self.image_tool.text("接受")
+                self.game.boss()
+            else:
+                break
+            time.sleep(3)
+            self.switch("auto_red")
 
 
     def collect_afk(self):
@@ -292,48 +363,38 @@ class Task:
         self.image_tool.picture("bag", offset=(400, -640))
 
 
-    def task_24(self):
+    def task_48(self, window_id):
+        self.free_diamond_7()
+        self.strength()
+        self.party_dungeon(window_id)
+
+    def task_24(self, window_id):
         self.free_diamond()
-        self.rome()
-        self.underground()
 
 
     def task_12(self):
-        self.log.info("领取任务奖励")
-        self.collect_task()
+        self.rome()
+        self.solo_dungeon()
 
-        self.log.info("领取邮件")
-        self.collect_mail()
-
-        self.log.info("领取背包物品")
-        self.collect_bag()
-
-        # self.log.info("打团队副本")
-        # clicks = [
-        #     (100, 0),  # 战斗
-        #     (360, -80),  # 团队副本
-        #     (340, -500),  # 入口
-        #     (100, 0)  # 战斗
-        # ]
-        # base_position = self.image_tool.picture("bag", click_times=0)
-        # if base_position is None:
-        #     print("无法找到图像 'bag'")
-        #     return False
-        # for offset in clicks:
-        #     target_position = (base_position[0] + offset[0], base_position[1] + offset[1])
-        #     self.action.click(*target_position)
 
     def task_5(self):
         self.collect_afk()
+        self.collect_task()
+        self.collect_mail()
+        self.collect_bag()
 
     def task_2(self):
         self.toyz()
-
-    def perform(self, task_name):
+    
+    def execute(self, task_name, window_id=None):
         """通用执行任务方法"""
         if hasattr(self, task_name):
             method = getattr(self, task_name)
-            method()
+            # 检查方法是否需要 window_id 参数
+            if 'window_id' in method.__code__.co_varnames:
+                method(window_id)
+            else:
+                method()  # 如果不需要 window_id 参数，直接调用
         else:
             print(f"Task method {task_name} does not exist.")
 

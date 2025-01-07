@@ -34,12 +34,11 @@ class Window:
         obj = ctypes.windll.LoadLibrary(DmReg_path)
         obj.SetDllPathW(dm_dll_path)
         self.dm = win32com.client.Dispatch('dm.dmsoft')
-        self.action = Action(self)  # 创建 Action 对象并传递当前窗口实例
-
         # 注册大漠插件
         self.register_dm_plugin()
         # 默认情况下绑定窗口
         self.is_bound = False
+        self.action = Action(self)  # 创建 Action 对象并传递当前窗口实例
 
 
     def register_dm_plugin(self):
@@ -128,14 +127,17 @@ class Window:
                 return True
             else:
                 print(f"游戏子窗口未找到，继续等待...")
-        print(f"未找到游戏窗口 '{self.window_id}'，需要启动")
-        return False
+        else:
+            print(f"未找到游戏窗口 '{self.window_id}'，需要启动")
+            self.open_window()
+            return False
+
 
     def open_window(self, timeout=60):
         """尝试打开游戏窗口"""
-        if self.game_exist():  # 如果已经有游戏窗口，直接返回
-            print("已经存在游戏句柄，跳过打开窗口")
-            return True
+        # if self.game_exist():  # 如果已经有游戏窗口，直接返回
+        #     print("已经存在游戏句柄，跳过打开窗口")
+        #     return True
 
         bluestacks_path = r"C:\Program Files\BlueStacks_nxt\HD-Player.exe"
         cmd_args = [
@@ -196,7 +198,7 @@ class Window:
         """截取窗口内容"""
         if not self.is_bound:
             if not self.bind_window():
-                print("绑定失败，无法执行截取操作")
+                print("绑定失败，无法执行截图操作")
                 return
 
         # 检查窗口句柄是否有效，如果无效，尝试重新绑定
@@ -466,7 +468,9 @@ class ImageTool:
             # 计算颜色差异
             diff = np.abs(np.array(pixel_color) - np.array(target_color))
             if np.all(diff <= tolerance):  # 如果颜色差异小于容忍度，认为颜色匹配
+                # print("找到目标颜色")
                 return True
+        # print("未找到目标颜色")
         return False
 
     def text(self, target_text, offset=(0, 0), click_times=1, region=None):
@@ -492,10 +496,15 @@ class ImageTool:
 
         # 向服务器发送 POST 请求进行 OCR 识别
         url = "http://127.0.0.1:20086/base64"
-        res = requests.post(url, json={"img": img_base64})
-
-        # 获取返回的 JSON 数据
-        response_data = res.json()
+        try:
+            res = requests.post(url, json={"img": img_base64})
+            response_data = res.json()
+        except requests.exceptions.RequestException as e:
+            print(f"OCR请求出错: {e}")
+            return None
+        except ValueError:
+            print("OCR返回的数据不是有效的 JSON")
+            return None
 
         # 存储文字和坐标的列表
         text_coordinates = []

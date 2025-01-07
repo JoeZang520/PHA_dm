@@ -44,5 +44,8 @@ def map_code(window_id):
 def afk(window_id):
     return get_window_id(window_id).get("afk", "稀有")
 
+def dungeon(window_id):
+    return get_window_id(window_id).get("dungeon", "None")
+
 def get_exclude_accounts():
     return get_env('exclude_accounts', [])  # 获取排除账户的数字索引

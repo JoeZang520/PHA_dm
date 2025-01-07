@@ -6,7 +6,7 @@ import base64
 import io
 
 # 测试在某个窗口找到的所有文字
-window_id = "004"
+window_id = "005"
 # 初始化窗口和动作实例
 log = Log(window_id)
 window = Window(window_id)
