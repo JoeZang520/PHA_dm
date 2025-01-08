@@ -91,7 +91,7 @@ class Game:
 
 
 
-    def enter_game(self, timeout=180):
+    def enter_game(self, timeout=210):
         elapsed_time = 0
         while elapsed_time < timeout:
             if self.in_game() or self.in_afk():
@@ -110,8 +110,8 @@ class Game:
                     self.timer(60, "等待进游戏")
                 self.check_offline()
             print(f"等待进入游戏... ({elapsed_time}/{timeout} 秒)")
-            time.sleep(10)  # 每秒检查一次
-            elapsed_time += 10
+            time.sleep(30)
+            elapsed_time += 30
 
         # 如果 60 秒内没进入游戏，结束函数，不报错
         print(f"等待 {timeout} 秒后仍未进入游戏，结束检查,关闭窗口。")
