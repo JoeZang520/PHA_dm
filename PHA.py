@@ -8,6 +8,7 @@ import multiprocessing
 import time
 import subprocess
 import os
+import psutil
 
 
 def timer(seconds, window_id):
@@ -27,9 +28,20 @@ def launch_ocr():
     if not os.path.exists(ocr_exe_path):
         raise FileNotFoundError(f"找不到 OCR 程序文件：{ocr_exe_path}")
 
-    # 直接打开 OCR.exe
+    # 检查 OCR 程序是否已在运行
+    for proc in psutil.process_iter():
+        try:
+            # 使用 as_dict() 获取进程信息
+            proc_info = proc.as_dict(attrs=['name'])  # 仅获取'name'字段
+            if "OCR.exe" == proc_info.get('name', ''):  # 比较名称
+                print("OCR 程序已经在运行！")
+                return  # 如果程序已经在运行，则不再启动
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+
+    # 如果 OCR 程序没有在运行，继续启动
     try:
-        subprocess.Popen([ocr_exe_path], cwd=os.path.dirname(ocr_exe_path))  # 打开程序
+        subprocess.Popen([ocr_exe_path], cwd=os.path.dirname(ocr_exe_path))  # 启动程序
         print("OCR 程序已打开！")
     except FileNotFoundError:
         print(f"无法找到文件：{ocr_exe_path}")

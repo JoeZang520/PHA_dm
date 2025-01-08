@@ -248,7 +248,7 @@ class Task:
             self.action.click(*target_position)
 
         time.sleep(2)
-        if self.image_tool.text("入口"):
+        if self.image_tool.text("入口", region=(0, 820, 400, 100)):
             if not self.game.wait_battle_start(max_wait_time=15):
                 self.esc()
                 return
