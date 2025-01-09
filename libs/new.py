@@ -11,15 +11,7 @@ class New:
         self.log = log
         self.config = config
 
-    @staticmethod
-    def timer(seconds, activity_name):
-        for remaining in range(seconds, -1, -1):
-            print(f"\r{activity_name} 倒计时: {remaining} 秒", end="")  # 显示倒计时在同一行
-            time.sleep(1)  # 等待 1 秒
-        print(f"\n")  # 换行并打印结束信息
-
-        # 分解装备
-
+    # 分解装备
     def salvage_equip(self, rarity):
         self.image_tool.picture("bag", offset=(-100, 0))  # 角色
         self.image_tool.picture("bag", offset=(40, -70))  # 装备
@@ -53,8 +45,23 @@ class New:
         self.log.info("开始新手指导任务")
         self.image_tool.text("退出")
         self.collect_diamond_new()
-        for _ in range(10):
-            self.game.check_offline()
+        for _ in range(3):
+            self.image_tool.text("指引任务", offset=(0, 90), click_times=4)
+            self.image_tool.text("莉迪亚", offset=(0, 80), click_times=3)
+            self.image_tool.text("消除", offset=(175, 0))  # 点击确认 防止npc文字中包含”确认“两个字
+            self.image_tool.text("审查", offset=(-175, 0))  # 点击取消
+            self.image_tool.picture("left")
+            self.image_tool.picture("right")
+            for _ in range(4):
+                self.image_tool.picture("hand", threshold=0.95, offset=(0, 40))
+                time.sleep(1)
+            self.image_tool.text("莉迪亚", offset=(0, 80), click_times=3)
+            self.image_tool.picture("X")
+            self.action.click(20, 20)
+            self.action.click(20, 20)
+            if self.image_tool.text("移动时"):
+                break
+        for _ in range(3):
             for _ in range(4):
                 self.image_tool.picture("bag", offset=(250, -900))  # 点击地图旁边的向右箭头，确保进入到最新的图
                 self.action.click(20, 20)
@@ -70,21 +77,26 @@ class New:
                 self.game.boss()
             if self.image_tool.text("移动时"):
                 break
-            self.image_tool.text("指引任务", offset=(0, 90), click_times=4)
-            self.image_tool.text("莉迪亚", offset=(0, 80), click_times=3)
             if not self.image_tool.picture("ad2", offset=(-80, 0)):
                 self.image_tool.text("确认", click_times=2)
-            self.image_tool.text("消除", offset=(175, 0))  # 点击确认 防止npc文字中包含”确认“两个字
-            self.image_tool.text("审查", offset=(-175, 0))  # 点击取消
-            self.image_tool.picture("left")
-            self.image_tool.picture("right")
-            for _ in range(4):
-                self.image_tool.picture("hand", threshold=0.95, offset=(0, 40))
-                time.sleep(1)
-            self.image_tool.text("莉迪亚", offset=(0, 80), click_times=3)
-            self.image_tool.picture("X")
-            self.action.click(20, 20)
-            self.action.click(20, 20)
+            for _ in range(3):
+                self.image_tool.text("指引任务", offset=(0, 90), click_times=4)
+                self.image_tool.text("莉迪亚", offset=(0, 80), click_times=3)
+                self.image_tool.text("消除", offset=(175, 0))  # 点击确认 防止npc文字中包含”确认“两个字
+                self.image_tool.text("审查", offset=(-175, 0))  # 点击取消
+                self.image_tool.picture("left")
+                self.image_tool.picture("right")
+                for _ in range(4):
+                    self.image_tool.picture("hand", threshold=0.95, offset=(0, 40))
+                    time.sleep(1)
+                self.image_tool.text("莉迪亚", offset=(0, 80), click_times=3)
+                self.image_tool.picture("X")
+                self.action.click(20, 20)
+                self.action.click(20, 20)
+                if self.image_tool.text("移动时"):
+                    break
+
+            self.game.switch_auto("auto_red")
 
 
 

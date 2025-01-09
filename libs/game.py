@@ -15,7 +15,7 @@ class Game:
     @staticmethod
     def timer(seconds, activity_name):
         for remaining in range(seconds, -1, -1):
-            print(f"\r{activity_name} 倒计时: {remaining} 秒", end="")  # 显示倒计时在同一行
+            print(f"\r{activity_name}: {remaining} 秒", end="")  # 显示倒计时在同一行
             time.sleep(1)  # 等待 1 秒
         print(f"\n")  # 换行并打印结束信息
 
@@ -91,7 +91,7 @@ class Game:
 
 
 
-    def enter_game(self, timeout=210):
+    def enter_game(self, timeout=300):
         elapsed_time = 0
         while elapsed_time < timeout:
             if self.in_game() or self.in_afk():
@@ -119,21 +119,21 @@ class Game:
         self.log.info(f"窗口已强制关闭")
 
     def handle_dialog(self):
-        if self.image_tool.picture("PHA"):
-            self.timer(60, "等待进入游戏")
-        self.timer(10, "等待弹窗加载")
-        if self.image_tool.text("He", click_times=0):
-            self.action.press("esc")
-            time.sleep(3)
-            for _ in range(3):
-                if self.image_tool.text("He", click_times=0):
-                    self.action.press("esc")
-                    time.sleep(3)
-        self.image_tool.text("确认", click_times=2)
-        self.image_tool.text("月度签到", offset=(0, 470), click_times=3)
-        self.image_tool.text("获得奖励", click_times=2)
-        self.image_tool.text("确认", click_times=2)
-        self.image_tool.text("获得奖励", click_times=2)
+        if self.image_tool.picture("ruby"):
+            self.timer(30, "等待弹窗加载")
+            if self.image_tool.text("He", click_times=0):
+                self.action.press("esc")
+                time.sleep(3)
+                for _ in range(3):
+                    if self.image_tool.text("He", click_times=0):
+                        self.action.press("esc")
+                        time.sleep(3)
+            self.image_tool.text("确认", click_times=2)
+            self.image_tool.text("月度签到", offset=(0, 470), click_times=3)
+            self.image_tool.text("获得奖励", click_times=2)
+            self.image_tool.text("确认", click_times=2)
+            self.image_tool.text("获得奖励", click_times=2)
+
 
 
     def check_offline(self):
@@ -161,7 +161,7 @@ class Game:
         if self.image_tool.text("维护", click_times=0):
             self.log.info("游戏维护")
             self.window.close_window()
-            os._exit(1)
+            sys.exit(1)
 
 
             # 将装备加入图鉴或者分解
