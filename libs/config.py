@@ -29,6 +29,9 @@ def get_accounts():
 def get_cycle_time():
     return get_env('cycle_time', 300)
 
+def get_process_limit():
+    return get_env('process_limit', 10)
+
 def get_window_id(window_id):
     return get_accounts().get(window_id)
 

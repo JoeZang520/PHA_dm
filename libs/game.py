@@ -19,11 +19,11 @@ class Game:
             time.sleep(1)  # 等待 1 秒
         print(f"\n")  # 换行并打印结束信息
 
-    def esc(self):
-        self.action.press("esc")
-        time.sleep(1)
-        self.action.press("esc")
-        time.sleep(1)
+    def esc(self, n=1):
+        for _ in range(n):
+            self.action.press("esc")
+            time.sleep(2)
+        self.action.click(210, 530)
         self.image_tool.text("消除")
 
     def in_game(self):
@@ -53,43 +53,33 @@ class Game:
             self.window.open_window()
             return False
 
-    def in_fight(self):
-        if self.in_game():
-            if self.image_tool.picture("auto_red", click_times=0):
-                print("in_fight")
-                return True
-            else:
-                print("not in_fight")
-                return False
-            
-    def wait_page_loaded(self, timeout=30):
+    def wait_loaded(self, target, wait_time=60, load="picture", click_times=0, offset=(0, 0), region=None):
+        """等待特定图像或文本加载"""
         elapsed_time = 0
-        while elapsed_time < timeout:
-            if self.image_tool.picture("ruby", click_times=0):
-                time.sleep(3)
-                return
-            print(f"等待加载画面... ({elapsed_time}/{timeout} 秒)")
-            time.sleep(1)  # 每秒检查一次
-            elapsed_time += 1
+        last_text_check_time = -10  # 用来记录上次检查文本的时间
+        while elapsed_time < wait_time:
+            if load == "picture":
+                if self.image_tool.picture(target, offset=offset, click_times=click_times):  # 查找图片
+                    print(f"{target} 图片已找到!")
+                    time.sleep(2)  # 找到图片后，稍作暂停
+                    return True  # 找到图片，立即返回
+            elif load == "text":
+                if elapsed_time - last_text_check_time >= 10:
+                    if self.image_tool.text(target, offset=offset, click_times=click_times, region=region):  # 查找文本
+                        print(f"{target} 文本已找到!")
+                        time.sleep(2)  # 找到文本后，稍作暂停
+                        return True  # 找到文本，立即返回
+                    last_text_check_time = elapsed_time  # 更新上次检查时间
 
-    def wait_battle_start(self, max_wait_time=30):
-        elapsed_time = 0
-        while elapsed_time < max_wait_time:
-            if self.image_tool.picture("dungeon", click_times=0):
-                # 找到图片后直接跳出循环
-                print("战斗已开始！")
-                break
-            print(f"等待战斗开始... ({elapsed_time}/{max_wait_time} 秒)")
+            # 如果没有找到，继续等待
+            print(f"等待 {target} ... ({elapsed_time}/{wait_time} 秒)")
+
             time.sleep(1)  # 每秒检查一次
-            elapsed_time += 1
+            elapsed_time += 1  # 每次检查后增加 elapsed_time
 
         # 如果超时
-        if elapsed_time >= max_wait_time:
-            print("未能在规定时间内找到战斗画面，退出。")
-            return False
-        return True
-
-
+        print(f"未能在规定时间内找到 {target}，退出。")
+        return False
 
     def enter_game(self, timeout=300):
         elapsed_time = 0
@@ -110,29 +100,32 @@ class Game:
                     self.timer(60, "等待进游戏")
                 self.check_offline()
             print(f"等待进入游戏... ({elapsed_time}/{timeout} 秒)")
-            time.sleep(30)
-            elapsed_time += 30
+            time.sleep(15)
+            elapsed_time += 15
 
-        # 如果 60 秒内没进入游戏，结束函数，不报错
         print(f"等待 {timeout} 秒后仍未进入游戏，结束检查,关闭窗口。")
         self.window.close_window()
         self.log.info(f"窗口已强制关闭")
 
     def handle_dialog(self):
-        if self.image_tool.picture("ruby"):
-            self.timer(30, "等待弹窗加载")
-            if self.image_tool.text("He", click_times=0):
-                self.action.press("esc")
-                time.sleep(3)
-                for _ in range(3):
-                    if self.image_tool.text("He", click_times=0):
-                        self.action.press("esc")
-                        time.sleep(3)
+        if self.in_afk():
+            return
+        self.timer(15, "等待弹窗加载")
+        if self.wait_loaded("He", wait_time=10, load="text"):
+            self.esc(2)
+            for _ in range(3):
+                result = self.wait_loaded("He", wait_time=10, load="text")
+                if result:
+                    self.action.press("esc")
+                else:
+                    break
             self.image_tool.text("确认", click_times=2)
             self.image_tool.text("月度签到", offset=(0, 470), click_times=3)
             self.image_tool.text("获得奖励", click_times=2)
             self.image_tool.text("确认", click_times=2)
             self.image_tool.text("获得奖励", click_times=2)
+        self.esc(2)
+
 
 
 
@@ -141,23 +134,16 @@ class Game:
         result = self.image_tool.text("服务器的")
         if result is not None:
             self.log.info("掉线")
-            x , y = result
+            x, y = result
             self.action.click(x, y + 100)
             self.action.click(x, y + 165)
             self.timer(60, "等待重连进游戏")
         if self.image_tool.text("下载"):
             self.log.info("游戏更新下载")
-            self.timer(30, "等待额外数据包")
-            self.image_tool.text("Additional data download", offset=(0, 140))
-            self.image_tool.text("更新")
-            self.timer(120, "等待下载安装")
-            self.image_tool.text("始玩")
-            self.timer(30, "等待画面加载")
-            self.image_tool.text("Additional data download", offset=(0, 140))
-            self.timer(60, "等待下载")
-
-        if self.image_tool.text("Additional data download", offset=(0, 140)):
-            self.timer(60, "等待下载")
+            self.wait_loaded("更新", wait_time=120, load="text", click_times=1, region=(0, 0, 150, 200))
+            self.wait_loaded("玩", wait_time=120, load="text", click_times=1, region=(0, 0, 150, 200))
+            self.wait_loaded("Additional data download", wait_time=15, offset=(0, 140), click_times=1, load="text")
+        self.image_tool.text("Additional data download", offset=(0, 140))
         if self.image_tool.text("维护", click_times=0):
             self.log.info("游戏维护")
             self.window.close_window()
@@ -208,16 +194,16 @@ class Game:
                 # 检查装备是否需要加入收藏
                 self.image_tool.picture("bag", offset=(370, -140))  # 收藏快捷方式
                 # 判断是否需要点击空白处或红色亮点，检查装备是否需要加入收藏
-                if self.image_tool.picture("knife_without_spot", threshold=0.95):  # 未找到需要加入图鉴的装备
+                if self.image_tool.picture("knife_without_spot", threshold=0.94):  # 未找到需要加入图鉴的装备
                     time.sleep(1)
-                    if self.image_tool.text("攻击力+"):
-                        self.image_tool.picture("knife_without_spot", threshold=0.95)
+                    if self.image_tool.text("攻击力"):
+                        self.image_tool.picture("knife_without_spot", threshold=0.94)
                         self.image_tool.picture("knife", offset=(0, -120))  # 随便点击空白处
                         # 暂时将装备材料化，等待升级或卖掉
                         self.image_tool.picture("bag", offset=(230, -140))  # 设备材料化
                         self.image_tool.picture("bag", offset=(240, -350), click_times=2)  # 确认
                         time.sleep(2)
-                    self.image_tool.picture("knife_without_spot", threshold=0.95)
+                    self.image_tool.picture("knife_without_spot", threshold=0.94)
                     self.image_tool.picture("knife", offset=(0, -120))  # 随便点击空白处
                     # 分解装备
                     print("分解装备")
@@ -242,7 +228,7 @@ class Game:
                             if self.image_tool.text("收藏增益登记", offset=(20, 60)):
                                 self.image_tool.text("选择")
                                 self.image_tool.text("确认", click_times=2)
-                        if not not self.image_tool.text("攻击力+"):
+                        if not self.image_tool.text("攻击力"):
                             self.image_tool.picture("knife")
                             self.image_tool.picture("knife", offset=(0, -150))
                             print("分解装备")
@@ -252,7 +238,10 @@ class Game:
                                 self.action.click(x + 200, y + 110)  # 分解
                                 self.action.click(x + 190, y - 265)  # 确认
                                 self.action.click(x + 190, y - 265)  # 确认
+                                time.sleep(2)
                         else:
+                            self.image_tool.picture("knife")
+                            self.image_tool.picture("knife", offset=(0, -150))
                             # 暂时将装备材料化，等待升级或卖掉
                             self.image_tool.picture("bag", offset=(230, -140))  # 设备材料化
                             self.image_tool.picture("bag", offset=(240, -350), click_times=2)  # 确认
@@ -268,21 +257,22 @@ class Game:
                 # 检查装备是否需要加入收藏
                 self.image_tool.picture("bag", offset=(370, -140))  # 收藏快捷方式
                 # 判断是否需要点击空白处或红色亮点，检查装备是否需要加入收藏
-                if self.image_tool.picture("knife_without_spot", threshold=0.95, click_times=0):  # 未找到需要加入图鉴的装备
+                if self.image_tool.picture("knife_without_spot", threshold=0.94, click_times=0):  # 未找到需要加入图鉴的装备
                     self.image_tool.picture("knife", offset=(0, -120))  # 随便点击空白处
                     # 分解装备
                     print("分解装备")
                     result = self.image_tool.picture("salvage")
                     if result is not None:
-                        x , y = result
+                        x, y = result
                         self.action.click(x + 200, y + 110)  # 分解
                         self.action.click(x + 190, y - 265)  # 确认
                         self.action.click(x + 190, y - 265)  # 确认
+                        time.sleep(2)
                 else:  # 该装备需要收藏
                     result = self.image_tool.picture("knife")
                     if result is not None:
                         x2, y2 = result
-                        self.action.drag((x2, y2 + 320), (x2, y2))  # 拖拽到下一页
+                        self.action.drag((x2, y2 + 390), (x2, y2+25))  # 拖拽到下一页
                         time.sleep(1)
 
                         # 点击查找需未加入图鉴的装备
@@ -305,6 +295,7 @@ class Game:
                             self.action.click(x + 200, y + 110)  # 分解
                             self.action.click(x + 190, y - 265)  # 确认
                             self.action.click(x + 190, y - 265)  # 确认
+                            time.sleep(2)
 
             if not found_color:
                 print("未找到紫色或橙色")
@@ -324,6 +315,7 @@ class Game:
                         return True
                     else:
                         self.action.click(*coords)
+                        time.sleep(1)
                         break
 
     def switch_rarity(self, window_id):
@@ -368,15 +360,15 @@ class Game:
         map_code = config.map_code(self.window.window_id)
 
         # 获取图片编号和关卡编号
-        image_key = str(map_code)[0]  # 图片编号
+        land_key = str(map_code)[0]  # 图片编号
         level = int(str(map_code)[1])  # 关卡编号
 
         # 获取图片名和基础偏移值
-        map_num = map_info.get(image_key)
+        map_num = map_info.get(land_key)
         if map_num is None:
-            raise ValueError(f"Invalid map_key: {image_key}")
+            raise ValueError(f"Invalid map_key: {land_key}")
 
-        image, base_offset_x = map_num
+        land, base_offset_x = map_num
 
         # 计算最终偏移值：每个关卡增加 80 的偏移
         offset_x = base_offset_x * level
@@ -387,21 +379,26 @@ class Game:
         # 执行地图切换操作
         self.switch_auto("auto_red")
         self.image_tool.picture("bag", offset=(100, 0))  # 点击战斗
+        time.sleep(2)
         self.image_tool.picture("bag", offset=(-40, -70))  # 点击场地
-        if 4 < int(image_key) < 9:
+        time.sleep(3)
+        self.action.click(130, 225)
+        self.action.click(130, 225)
+        time.sleep(3)
+        if 4 < int(land_key) < 9:
             self.image_tool.picture("bag", offset=(130, -750)), time.sleep(2)
-        if 8 < int(image_key) < 13:
+        if 8 < int(land_key) < 13:
             self.image_tool.picture("bag", offset=(130, -750)), time.sleep(2)
             self.action.drag((100, 760), (100, 100)), time.sleep(2)
-        self.image_tool.picture(image, offset=(offset_x, offset_y))
-        self.action.click(20, 20)
-        self.action.click(20, 20)
+        self.image_tool.picture(land, offset=(offset_x, offset_y))
+        self.esc(2)
         # 根据 level 打印不同的日志信息
         if level == 0:  # 回城镇
             print(f"{self.window.window_id} 回城")
         else:  # 其他关卡
-            print(f"{self.window.window_id} 去往地图 {map_info[image_key][0]}, 第 {level} 关")
-        self.wait_page_loaded()
+            print(f"{self.window.window_id} 去往地图 {map_info[land_key][0]}, 第 {level} 关")
+        self.wait_loaded("ruby")
+        time.sleep(3)
 
 
     def collect_diamond(self):
@@ -436,7 +433,7 @@ class Game:
 
     def boss(self):
         print("进入boss")
-        self.wait_page_loaded()
+        self.wait_loaded("dungeon")
 
         directions = [
             ("W",),  # 上
@@ -481,10 +478,10 @@ class Game:
                 # 更新上一次的方向
                 last_direction = direction
 
-            if not self.wait_battle_start(max_wait_time=3):
+            if not self.wait_loaded("dungeon", wait_time=5):
                 if (self.image_tool.text("移动到下一个区域", click_times=3)
                         or self.image_tool.text("逃脱")):
-                    self.wait_page_loaded()
+                    self.wait_loaded("ruby")
                     time.sleep(3)
                     self.image_tool.text("消除", offset=(175, 0))
                     self.esc()

@@ -1,45 +1,79 @@
-import subprocess
-import os
+import libs.config as config
+from libs.log import Log
+from libs.game import Game
+from libs.new import New
+from libs.tool import ImageTool, Action, Window
+from libs.scheduler import Scheduler
 import time
-import socket
+
+cycle_time = config.get_cycle_time()
+def timer(seconds, activity_name, window_id):
+    for remaining in range(seconds, -1, -1):
+        print(f"\r{window_id} {activity_name}: {remaining} 秒", end="")  # 显示倒计时在同一行
+        time.sleep(1)  # 等待 1 秒
+    print(f"\n")  # 换行并打印结束信息
 
 
-def launch_ocr_and_server(ocr_dir="OCR", port=20086):
-    """
-    启动 OCR.exe 和服务器
-    """
-    # 获取当前项目主目录
-    project_dir = os.path.abspath(os.path.dirname(__file__))  # 当前脚本所在目录
-    ocr_exe_path = os.path.join(project_dir, ocr_dir, "OCR.exe")  # OCR.exe 的完整路径
+def pha(window_id):
+    while True:
+        try:
+            window = Window(window_id)
+            log = Log(window_id)
+            action = Action(window)
+            image_tool = ImageTool(window, action)
+            game = Game(window, image_tool, action, log)
+            new = New(window, image_tool, action, game, log)
+            scheduler = Scheduler(window_id, window, image_tool, action, game, log)
 
-    # 检查 OCR.exe 是否存在
-    if not os.path.exists(ocr_exe_path):
-        raise FileNotFoundError(f"找不到 OCR 程序文件：{ocr_exe_path}")
+            # 尝试进入游戏，失败则重新尝试
+            if not game.enter_game():
+                print(f"窗口 {window_id} 进入游戏失败，准备重新尝试。")
+                time.sleep(60)
+                continue  # 跳过当前循环，重新开始
 
-    # 启动 OCR.exe
-    try:
-        print(f"OCR 程序路径：{ocr_exe_path}")
-        subprocess.Popen([ocr_exe_path], cwd=os.path.dirname(ocr_exe_path))  # 打开 OCR.exe
-        print("OCR 程序已打开！")
-        time.sleep(5)  # 等待 OCR.exe 初始化
-    except Exception as e:
-        print(f"启动 OCR 程序失败：{e}")
-        return
+            game.handle_dialog()
+            game.choose_map()
+            game.collect_diamond()
 
-    # 检查端口是否被占用
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        if s.connect_ex(('0.0.0.0', port)) == 0:
-            print(f"端口 {port} 已被占用，请释放端口或选择其他端口。")
-            return
+            # 如果是新任务，执行新手引导任务
+            if config.is_new(window_id):
+                new.task_guide()
 
-    # 启动服务器
-    try:
-        print(f"即将启动服务器，监听端口 {port}...")
-        import uvicorn
-        uvicorn.run("app:app", host="0.0.0.0", port=port)
-    except Exception as e:
-        print(f"启动服务器失败：{e}")
+            # 执行每日任务
+            scheduler.pending_task(window_id)
+            action.click(40, 275)  # 点击自动休眠
+            game.switch_rarity(window_id)
 
+            timer(cycle_time, "等待下一次循环", window_id)
+        except Exception as e:
+            print("发生异常")
+            time.sleep(cycle_time)
+            continue
+
+
+# 用于存储窗口对应的进程
+window_processes = {}
 
 if __name__ == "__main__":
-    launch_ocr_and_server()
+    # 启动 OCR.exe
+    Window.launch_ocr()
+
+    # 获取所有账户的 window_id
+    accounts = config.get_accounts()
+    pha("004")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

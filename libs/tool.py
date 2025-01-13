@@ -14,9 +14,7 @@ import requests
 import base64
 import io
 import libs.config as config
-
-
-
+import psutil
 
 
 class Window:
@@ -40,6 +38,38 @@ class Window:
         self.is_bound = False
         self.action = Action(self)  # 创建 Action 对象并传递当前窗口实例
 
+    @staticmethod
+    def launch_ocr():
+        project_dir = os.path.abspath(os.path.dirname(__file__))  # 当前脚本所在目录
+        ocr_exe_path = os.path.join(project_dir, "OCR", "OCR.exe")  # 项目主目录 + OCR文件夹 + OCR.exe
+
+        # 打印检查路径是否正确
+        print("OCR 程序路径：", ocr_exe_path)
+
+        # 确保 OCR.exe 存在
+        if not os.path.exists(ocr_exe_path):
+            raise FileNotFoundError(f"找不到 OCR 程序文件：{ocr_exe_path}")
+
+        # 检查 OCR 程序是否已在运行
+        for proc in psutil.process_iter():
+            try:
+                # 使用 as_dict() 获取进程信息
+                proc_info = proc.as_dict(attrs=['name'])  # 仅获取'name'字段
+                if "OCR.exe" == proc_info.get('name', ''):  # 比较名称
+                    print("OCR 程序已经在运行！")
+                    return  # 如果程序已经在运行，则不再启动
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+
+        # 如果 OCR 程序没有在运行，继续启动
+        try:
+            subprocess.Popen([ocr_exe_path], cwd=os.path.dirname(ocr_exe_path))  # 启动程序
+            time.sleep(5)
+            print("OCR 程序已打开！")
+        except FileNotFoundError:
+            print(f"无法找到文件：{ocr_exe_path}")
+        except Exception as e:
+            print(f"程序运行失败：{e}")
 
     def register_dm_plugin(self):
         """注册大漠插件"""
@@ -128,16 +158,14 @@ class Window:
             else:
                 print(f"游戏子窗口未找到，继续等待...")
         else:
-            print(f"未找到游戏窗口 '{self.window_id}'，需要启动")
-            self.open_window()
+            print(f"未找到窗口 '{self.window_id}'，需要启动")
             return False
-
 
     def open_window(self, timeout=60):
         """尝试打开游戏窗口"""
-        # if self.game_exist():  # 如果已经有游戏窗口，直接返回
-        #     print("已经存在游戏句柄，跳过打开窗口")
-        #     return True
+        if self.game_exist():  # 如果已经有游戏窗口，直接返回
+            print("已经存在游戏句柄，跳过打开窗口")
+            return True
 
         bluestacks_path = r"C:\Program Files\BlueStacks_nxt\HD-Player.exe"
         cmd_args = [
@@ -334,7 +362,7 @@ class Action:
             dm.keyup(key_code)  # 释放键
         # time.sleep(0.5)
 
-    def drag(self, start, end, duration=3.0, steps=100):
+    def drag(self, start, end, duration=3, steps=100):
         """
         使用大漠插件模拟鼠标按住并滑动屏幕
         :param start: 起始位置的坐标元组 (x, y)
@@ -366,11 +394,10 @@ class Action:
             current_y = int(start_y + delta_y * i)
             dm.MoveTo(current_x, current_y)
             time.sleep(duration / steps)
-
-
         # 模拟鼠标释放
-        dm.LeftUp()  # 释放左键
         time.sleep(0.5)
+        dm.LeftUp()  # 释放左键
+
 
 
 
@@ -438,6 +465,7 @@ class ImageTool:
             print(f"找到图片 '{png}'，坐标({x}, {y})，偏移 {offset}，点击 {click_times} 次")
             for _ in range(click_times):
                 self.action.click(x, y)  # 调用 action 对象的 click 方法
+                time.sleep(1.5)
             return x, y
         else:
             print(f"没有找到图片 '{png}'")
@@ -501,6 +529,7 @@ class ImageTool:
             response_data = res.json()
         except requests.exceptions.RequestException as e:
             print(f"OCR请求出错: {e}")
+            Window.launch_ocr()
             return None
         except ValueError:
             print("OCR返回的数据不是有效的 JSON")
@@ -543,6 +572,7 @@ class ImageTool:
                 print(f"找到文字 '{target_text}'，坐标 ({global_x}, {global_y})，偏移 {offset}，点击 {click_times} 次")
                 for _ in range(click_times):
                     self.action.click(global_x, global_y)
+                    time.sleep(1.5)
                 return global_x, global_y
 
         # 如果未找到目标文字

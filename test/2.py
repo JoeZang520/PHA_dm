@@ -1,25 +1,23 @@
-import subprocess
-import os
-import time
-def launch_ocr():
-    project_dir = os.path.abspath(os.path.dirname(__file__))  # 当前脚本所在目录
-    ocr_exe_path = os.path.join(project_dir, "OCR", "OCR.exe")  # 项目主目录 + OCR文件夹 + OCR.exe
+from libs.log import Log
+import libs.config as config
+from libs.game import Game
+from libs.task import Task
+from libs.new import New
+from libs.tool import ImageTool, Action, Window
+from libs.scheduler import Scheduler
 
-    # 打印检查路径是否正确
-    print("OCR 程序路径：", ocr_exe_path)
-
-    # 确保 OCR.exe 存在
-    if not os.path.exists(ocr_exe_path):
-        raise FileNotFoundError(f"找不到 OCR 程序文件：{ocr_exe_path}")
-
-    # 直接打开 OCR.exe
-    try:
-        subprocess.Popen([ocr_exe_path], cwd=os.path.dirname(ocr_exe_path))  # 打开程序
-        print("OCR 程序已打开！")
-        time.sleep(5)
-    except FileNotFoundError:
-        print(f"无法找到文件：{ocr_exe_path}")
-    except Exception as e:
-        print(f"程序运行失败：{e}")
+window_id = "001"
+window = Window(window_id)
+log = Log(window_id)
+action = Action(window)
+image_tool = ImageTool(window, action)
+game = Game(window, image_tool, action, log)
+task = Task(window, window_id, image_tool, action, game, log)
+new = New(window, image_tool, action, game, log)
+scheduler = Scheduler(window_id, window, image_tool, action, game, log)
+# game.enter_game()
 
 
+
+# 以下是测试代码
+window.open_window(60)

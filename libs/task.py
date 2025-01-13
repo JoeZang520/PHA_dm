@@ -20,12 +20,6 @@ class Task:
             time.sleep(1)  # 等待 1 秒
         print(f"\n")  # 换行并打印结束信息
 
-    def esc(self):
-        self.action.press("esc")
-        time.sleep(1)
-        self.action.press("esc")
-        time.sleep(1)
-        self.image_tool.text("消除")
 
     def wait_page_loaded(self, timeout=60):
         elapsed_time = 0
@@ -149,9 +143,13 @@ class Task:
     def toyz(self):
         self.log.info("放置Toyz")
         self.image_tool.picture("bag", offset=(200, 0)), time.sleep(2)
-        self.image_tool.picture("bag", offset=(340, -735)), time.sleep(2)
+        self.image_tool.picture("bag", offset=(340, -735)), time.sleep(2)  # 升级
 
-        for _ in range(2):
+        for i in range(2):
+            if i == 1:
+                self.action.drag((300, 700), (300, 600))
+                time.sleep(2)
+            self.image_tool.text("开始ToyZ")
             if (self.image_tool.text("领取", click_times=2)
                     or self.image_tool.picture("+", click_times=1)):
                 self.image_tool.picture("+", click_times=1)
@@ -177,16 +175,21 @@ class Task:
                     self.image_tool.picture("toyz_grey")  # 放置第6个
 
                     self.action.click(x + 125, y + 960), time.sleep(2)  # 确认
+
+                    if i == 1:
+                        self.action.drag((300, 700), (300, 650))
+                        time.sleep(2)
+
                     self.image_tool.text("开始ToyZ")
                     self.image_tool.text("开始ToyZ", offset=(0, 300))
                     time.sleep(3)
+        self.action.drag((300, 600), (300, 900))
         self.action.click(20, 20)  # 返回主界面
-
 
     def free_diamond(self):
         self.log.info("领每日免费宝石")
         self.image_tool.picture("bag", offset=(400, 0))
-        time.sleep(2)
+        time.sleep(3)
         self.image_tool.text("确认")
         result = self.image_tool.text("套餐商店")
         if result is not None:
@@ -198,10 +201,11 @@ class Task:
                 self.action.click(x - 65, y - 435)  # 确认
         self.image_tool.picture("X")
 
+
     def free_diamond_7(self):
         self.log.info("领每周免费宝石")
         self.image_tool.picture("bag", offset=(400, 0))
-        time.sleep(2)
+        time.sleep(3)
         self.image_tool.text("确认")
         result = self.image_tool.text("套餐商店")
         if result is not None:
@@ -211,6 +215,7 @@ class Task:
             if not self.image_tool.text("SOLOOUT"):
                 self.action.click(x - 80, y - 580)  # Free
                 self.action.click(x + 30, y - 340)  # 购买
+                time.sleep(2)
                 self.action.click(x - 65, y - 435)  # 确认
         self.image_tool.picture("X")
 
@@ -249,21 +254,21 @@ class Task:
 
         time.sleep(2)
         if self.image_tool.text("入口", region=(0, 820, 400, 100)):
-            if not self.game.wait_battle_start(max_wait_time=15):
-                self.esc()
+            if not self.game.wait_loaded("dungeon", wait_time=30):
+                self.game.esc()
                 return
             for _ in range(15):
                 if not self.image_tool.picture("ad2", click_times=0):
                     self.image_tool.text("重试")
-                    if not self.game.wait_battle_start(max_wait_time=15):
+                    if not self.game.wait_loaded("dungeon", wait_time=30):
                         self.image_tool.text("确认")
-                        self.game.wait_page_loaded()
+                        self.game.wait_loaded("ruby")
                         return
                 self.timer(30, "等待下一次找重试")
-        self.esc()
+        self.game.esc()
 
     def move_in_solo_dungeon(self):
-        self.wait_page_loaded()
+        self.game.wait_loaded("ruby")
         self.action.press("A", second=2)
         self.action.press("S", second=2)
         self.action.press("D", second=4)
@@ -302,7 +307,7 @@ class Task:
                     self.action.drag((300, 700), (300, 300))
                     if self.image_tool.text("012", region=(0, 600, 500, 300)) \
                             or self.image_tool.text("0/2", region=(0, 600, 500, 300)):
-                        self.esc()
+                        self.game.esc()
                     else:
                         self.enter_dungeon()
                 else:
@@ -375,7 +380,6 @@ class Task:
     def task_12(self):
         self.rome()
         self.solo_dungeon()
-
 
     def task_5(self):
         self.collect_afk()

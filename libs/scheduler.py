@@ -107,7 +107,6 @@ class Scheduler:
                 try:
                     # 执行任务
                     self.task.execute(task_name, window_id)
-                    self.task.esc()
                     # 任务执行成功后更新任务状态
                     self.set_task_status(task_name, "completed")
                 except Exception as e:

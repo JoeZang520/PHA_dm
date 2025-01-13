@@ -14,6 +14,7 @@ game = Game(window, image_tool, action, log)
 task = Task(window, image_tool, action, log)
 new = New(window, image_tool, action, game, log)
 scheduler = Scheduler(window_id, window, image_tool, action, log)
+window.launch_ocr()
 game.enter_game()
 
 

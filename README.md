@@ -9,7 +9,7 @@
 1. 下载 BlueStacks 模拟器：[官方链接](https://www.bluestacks.com)
 2. 下载OCR识别文字的工具：通过网盘分享的文件：OCR.zip
 链接: https://pan.baidu.com/s/1dFuj-XIaEMsubN-d6EIYQg?pwd=9999 提取码: 9999
-下载之后,解压，放到项目文件夹里。
+下载之后,解压，放到项目文件夹中的libs文件夹里。
 3. 模拟器窗口命名： 改名为 `001`, `002`, `003` 序号，作为 window_id 。
 4. 模拟器多开管理器设置**： 
    - **新建模拟器窗口设置**：

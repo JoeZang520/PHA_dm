@@ -8,46 +8,16 @@ import subprocess
 import os
 import psutil
 
-def launch_ocr():
-    project_dir = os.path.abspath(os.path.dirname(__file__))  # 当前脚本所在目录
-    ocr_exe_path = os.path.join(project_dir, "OCR", "OCR.exe")  # 项目主目录 + OCR文件夹 + OCR.exe
-
-    # 打印检查路径是否正确
-    print("OCR 程序路径：", ocr_exe_path)
-
-    # 确保 OCR.exe 存在
-    if not os.path.exists(ocr_exe_path):
-        raise FileNotFoundError(f"找不到 OCR 程序文件：{ocr_exe_path}")
-
-    # 检查 OCR 程序是否已在运行
-    for proc in psutil.process_iter():
-        try:
-            # 使用 as_dict() 获取进程信息
-            proc_info = proc.as_dict(attrs=['name'])  # 仅获取'name'字段
-            if "OCR.exe" == proc_info.get('name', ''):  # 比较名称
-                print("OCR 程序已经在运行！")
-                return  # 如果程序已经在运行，则不再启动
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
-
-    # 如果 OCR 程序没有在运行，继续启动
-    try:
-        subprocess.Popen([ocr_exe_path], cwd=os.path.dirname(ocr_exe_path))  # 启动程序
-        print("OCR 程序已打开！")
-    except FileNotFoundError:
-        print(f"无法找到文件：{ocr_exe_path}")
-    except Exception as e:
-        print(f"程序运行失败：{e}")
 
 # 测试在某个窗口找到的所有文字
-window_id = "007"
+window_id = "005"
 # 初始化窗口和动作实例
 log = Log(window_id)
 window = Window(window_id)
 action = Action(window)
 image_tool = ImageTool(window, action)
 game = Game(window, image_tool, action, log)
-launch_ocr()
+window.launch_ocr()
 # 打开窗口
 window.open_window()
 
