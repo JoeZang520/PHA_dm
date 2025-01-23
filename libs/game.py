@@ -23,7 +23,7 @@ class Game:
         for _ in range(n):
             self.action.press("esc")
             time.sleep(2)
-        self.action.click(210, 530)
+        self.action.click(210, 570)
         self.image_tool.text("消除")
 
     def in_game(self):
@@ -52,6 +52,16 @@ class Game:
             print("not in_game")
             self.window.open_window()
             return False
+
+    def enter_afk(self, window_id):
+        self.image_tool.text("复活")
+        self.wait_loaded("ruby")
+        self.action.click(40, 275)  # 点击自动休眠
+        if self.image_tool.text("镇"):
+            self.image_tool.text("退出")
+            self.choose_map()
+            self.action.click(40, 275)  # 点击自动休眠
+        self.switch_rarity(window_id)
 
     def wait_loaded(self, target, wait_time=60, load="picture", click_times=0, offset=(0, 0), region=None):
         """等待特定图像或文本加载"""
@@ -112,7 +122,7 @@ class Game:
             return
         self.timer(15, "等待弹窗加载")
         if self.wait_loaded("He", wait_time=10, load="text"):
-            self.esc(2)
+            self.action.press("esc")
             for _ in range(3):
                 result = self.wait_loaded("He", wait_time=10, load="text")
                 if result:
@@ -147,11 +157,11 @@ class Game:
         if self.image_tool.text("维护", click_times=0):
             self.log.info("游戏维护")
             self.window.close_window()
-            sys.exit(1)
+            self.timer(600, "等待维护。。。")
 
 
-            # 将装备加入图鉴或者分解
-    def book(self, equip_number):
+    def book_orange(self, equip_number):
+        self.image_tool.picture("X")
         # 初始点击项
         x_offset = -110 + (equip_number - 1) * 55  # 根据 equip_number 动态计算 x 坐标
         clicks = [
@@ -175,63 +185,73 @@ class Game:
             print(f"点击 {label} : {target_position}")
 
         found_color = False
-        for _ in range(20):
-            coordinates = [(323, 611)]
-            purple = (108, 55, 158)
+        all_equips = []  # 用于存储所有需要升级的装备信息
+        coordinate = (244, 610)
+        offset = 77  # 每次增加的横坐标偏移量
+        for i in range(5):
             orange = (173, 87, 62)
             tolerance = 25
 
-            # 打印坐标进行调试
-            print(f"检查坐标：{coordinates}")
-
-            result1 = self.image_tool.color(coordinates, orange, tolerance)
+            result1 = self.image_tool.color(coordinate, orange, tolerance)
             if result1:
                 print("找到橙色")
                 found_color = True
                 self.image_tool.picture("X")
-                self.image_tool.picture("bag", offset=(2 * 77, -400))  # 固定位置的一件装备
+                x, y = coordinate
+                self.action.click(x, y)  # 固定位置的一件装备
 
-                # 检查装备是否需要加入收藏
-                self.image_tool.picture("bag", offset=(370, -140))  # 收藏快捷方式
-                # 判断是否需要点击空白处或红色亮点，检查装备是否需要加入收藏
+                # 检查装备是否需要加入收藏增益登记
+                self.image_tool.picture("bag", offset=(370, -140))  # 收藏增益登记快捷方式
+                # 判断是否需要点击空白处或红色亮点，检查装备是否需要加入收藏增益登记
                 if self.image_tool.picture("knife_without_spot", threshold=0.94):  # 未找到需要加入图鉴的装备
                     time.sleep(1)
-                    if self.image_tool.text("攻击力"):
+                    if self.image_tool.text("攻击力", region=(37,491,547,847)):
                         self.image_tool.picture("knife_without_spot", threshold=0.94)
                         self.image_tool.picture("knife", offset=(0, -120))  # 随便点击空白处
-                        # 暂时将装备材料化，等待升级或卖掉
-                        self.image_tool.picture("bag", offset=(230, -140))  # 设备材料化
-                        self.image_tool.picture("bag", offset=(240, -350), click_times=2)  # 确认
-                        time.sleep(2)
-                    self.image_tool.picture("knife_without_spot", threshold=0.94)
-                    self.image_tool.picture("knife", offset=(0, -120))  # 随便点击空白处
-                    # 分解装备
-                    print("分解装备")
-                    result = self.image_tool.picture("salvage")
-                    if result is not None:
-                        x, y = result
-                        self.action.click(x + 200, y + 110)  # 分解
-                        self.action.click(x + 190, y - 265)  # 确认
-                        self.action.click(x + 190, y - 265)  # 确认
 
-                else:  # 该装备需要收藏
+
+                        equip = self.image_tool.read_text((368, 132, 551, 157))
+                        if equip is not None:
+                            all_equips.append(equip)  # 将当前装备信息添加到列表中
+                            # 更新横坐标
+                            coordinate = (coordinate[0] + offset, coordinate[1])
+
+                    else:
+                        self.image_tool.picture("knife_without_spot", threshold=0.94)
+                        self.image_tool.picture("knife", offset=(0, -120))  # 随便点击空白处
+                        # 分解装备
+                        print("分解装备")
+                        time.sleep(1)
+                        result = self.image_tool.picture("salvage")
+                        if result is not None:
+                            x, y = result
+                            self.action.click(x + 200, y + 110)  # 分解
+                            self.action.click(x + 190, y - 265)  # 确认
+                            self.action.click(x + 190, y - 265)  # 确认
+
+                else:  # 该装备需要收藏增益登记
                     result = self.image_tool.picture("knife")
                     if result is not None:
                         x1, y1 = result
-                        # 点击查找需未加入图鉴的装备
+                        # 设置基准位置
                         base_x1 = x1 - 150
-                        base_y1 = y1 + 120
-                        offset = 70  # 每次偏移的量
-                        # 循环进行点击操作
-                        for i in range(3):  # 偏移三次
-                            self.action.click(base_x1 + i * offset, base_y1)
-                            if self.image_tool.text("收藏增益登记", offset=(20, 60)):
-                                self.image_tool.text("选择")
-                                self.image_tool.text("确认", click_times=2)
-                        if not self.image_tool.text("攻击力"):
+                        base_y1 = y1 + 120 + 2 * 125  # 从第三行开始，y坐标应该是y1 + 2 * 125（第三行的底部）
+                        offset = 70  # 每次点击水平偏移量
+                        row_offset = -125  # 每行的垂直偏移量，向上移动
+
+                        # 从第三行开始点击，每行点击3次
+                        for row in range(3):  # 循环3行，分别是第三行、第二行、第一行
+                            for col in range(3):  # 每行点击3次
+                                self.action.click(base_x1 + col * offset, base_y1 + row * row_offset)
+                                if self.image_tool.text("收藏增益登记", offset=(20, 60)):
+                                    self.image_tool.text("选择")
+                                    self.image_tool.text("确认", click_times=2)
+
+                        if not self.image_tool.text("攻击力", region=(37,491,547,847)):
                             self.image_tool.picture("knife")
                             self.image_tool.picture("knife", offset=(0, -150))
                             print("分解装备")
+                            time.sleep(1)
                             result = self.image_tool.picture("salvage")
                             if result is not None:
                                 x, y = result
@@ -239,24 +259,57 @@ class Game:
                                 self.action.click(x + 190, y - 265)  # 确认
                                 self.action.click(x + 190, y - 265)  # 确认
                                 time.sleep(2)
-                        else:
-                            self.image_tool.picture("knife")
-                            self.image_tool.picture("knife", offset=(0, -150))
-                            # 暂时将装备材料化，等待升级或卖掉
-                            self.image_tool.picture("bag", offset=(230, -140))  # 设备材料化
-                            self.image_tool.picture("bag", offset=(240, -350), click_times=2)  # 确认
-                            time.sleep(2)
+                        self.image_tool.picture("knife")
+                        self.image_tool.picture("knife", offset=(0, -150))
 
-            result2 = self.image_tool.color(coordinates, purple, tolerance)
+            if not found_color:
+                print("未找到橙色")
+                break
+
+        return all_equips  # 返回所有需要升级的装备信息
+
+
+    # 将装备加入图鉴或者分解
+    def book_purple(self, equip_number):
+        # 初始点击项
+        x_offset = -110 + (equip_number - 1) * 55  # 根据 equip_number 动态计算 x 坐标
+        clicks = [
+            (40, -70, "装备"),
+            (x_offset, -475, f"装备物品{equip_number}"),  # 动态设置装备物品的 x 坐标
+            (275, -475, "排序")
+        ]
+
+        # 先执行固定的点击项
+        result = self.image_tool.picture("bag", click_times=0)
+        if result is None:
+            print("无法找到图像 'bag'")
+            return False
+        x, y = result
+
+        # 执行初始点击项
+        for offset in clicks:
+            x_offset, y_offset, label = offset
+            target_position = (x + x_offset, y + y_offset)
+            self.action.click(*target_position)
+            print(f"点击 {label} : {target_position}")
+
+        found_color = False
+        for i in range(20):
+            coordinate = (91,685)
+            purple = (108, 55, 158)
+            tolerance = 25
+
+
+            result2 = self.image_tool.color(coordinate, purple, tolerance)
             if result2:
                 print("找到紫色")
                 found_color = True
-                self.image_tool.picture("X")
-                self.image_tool.picture("bag", offset=(2 * 77, -400))  # 固定位置的一件装备
+                x, y = coordinate
+                self.action.click(x, y)  # 固定位置的一件装备
 
-                # 检查装备是否需要加入收藏
-                self.image_tool.picture("bag", offset=(370, -140))  # 收藏快捷方式
-                # 判断是否需要点击空白处或红色亮点，检查装备是否需要加入收藏
+                # 检查装备是否需要加入收藏增益登记
+                self.image_tool.picture("bag", offset=(370, -140))  # 收藏增益登记快捷方式
+                # 判断是否需要点击空白处或红色亮点，检查装备是否需要加入收藏增益登记
                 if self.image_tool.picture("knife_without_spot", threshold=0.94, click_times=0):  # 未找到需要加入图鉴的装备
                     self.image_tool.picture("knife", offset=(0, -120))  # 随便点击空白处
                     # 分解装备
@@ -268,7 +321,7 @@ class Game:
                         self.action.click(x + 190, y - 265)  # 确认
                         self.action.click(x + 190, y - 265)  # 确认
                         time.sleep(2)
-                else:  # 该装备需要收藏
+                else:  # 该装备需要收藏增益登记
                     result = self.image_tool.picture("knife")
                     if result is not None:
                         x2, y2 = result
@@ -298,8 +351,95 @@ class Game:
                             time.sleep(2)
 
             if not found_color:
-                print("未找到紫色或橙色")
+                print("未找到紫色")
                 break
+
+
+    def upgrade_eqip(self):
+        all_equips = []  # 用于存储所有装备信息
+        for i in range(1, 7):  
+            equips = self.book_orange(i)  # 每次调用 book_orange，得到当前的装备信息
+            if equips:
+                all_equips.extend(equips)
+        if all_equips:
+            self.esc(2)
+            self.action.click(540, 331, pos="左箭头")
+            self.action.click(402, 144, pos="装备升级")
+            self.action.click(294, 633, pos="大装备升级")
+
+            base_x = 118
+            base_y = 689
+            offset = 70  # 每次点击水平偏移量
+            row_offset = 70
+
+            for row in range(2):  # 控制行数，范围为 0 和 1，表示两行
+                for i in range(6):  # 每行点击 6 次
+                    self.action.click(base_x + i * offset, base_y + row * row_offset)
+                    equips = self.image_tool.read_text((230, 342, 418, 371))
+                    print(f'equips{equips}')
+                    print(f'all_equips{all_equips}')
+                    if equips in all_equips:
+                        self.image_tool.text("选择", region=(105, 859, 477, 937))
+                        for _ in range(15):
+                            if self.image_tool.color((344, 817), (177, 230, 151)):  # 升级
+                                self.action.click(344, 817)  # 升级
+                                self.action.click(382, 578)  # 升级警告处的升级
+                                self.action.click(382, 578)  # 升级警告处的升级
+                                self.action.click(382, 578)  # 升级警告处的升级
+                    else:
+                        print("装备不匹配")
+
+        self.esc(2)
+        self.image_tool.picture("right")
+        self.image_tool.picture("bag", offset=(-100, 0))
+
+    def upgrade_blunt(self):
+        self.action.click(540, 331, pos="左箭头")
+        self.action.click(402, 144, pos="装备升级")
+        self.action.click(294, 633, pos="大装备升级")
+
+        base_x = 118
+        base_y = 689
+        offset = 70  # 每次点击水平偏移量
+        row_offset = 70
+
+        for row in range(2):  # 控制行数，范围为 0 和 1，表示两行
+            for i in range(6):  # 每行点击 6 次
+                self.action.click(base_x + i * offset, base_y + row * row_offset)
+                self.image_tool.text("选择", region=(105, 859, 477, 937))
+                for _ in range(15):
+                    if self.image_tool.color((344, 817), (177, 230, 151)) and not self.image_tool.picture("cheng1"):
+                        self.action.click(344, 817, click_times=3, pos="升级")
+                    else:
+                        self.action.press("esc")
+                        time.sleep(2)
+                        break
+        self.esc(3)
+
+
+
+
+    def read_stone(self):
+        self.action.click(540, 331, pos="左箭头")
+        self.action.click(402, 144, pos="装备升级")
+        self.action.click(294, 633, pos="大装备升级")
+        base_x = 118
+        base_y = 689
+        offset = 70  # 每次点击水平偏移量
+        for i in range(6):
+            self.action.click(base_x + i * offset, base_y)
+            self.image_tool.text("选择", region=(105, 859, 477, 937))
+            if not self.image_tool.color((344, 819), (177, 230, 151)):
+                print("没有武器升级石")
+                self.esc(4)
+                return None
+            else:
+                self.action.press("esc")
+        self.esc(4)
+        return True
+
+
+
 
     def switch_auto(self, target_image):
         image_list = ["auto_grey", "auto_red", "auto_green"]
@@ -402,13 +542,16 @@ class Game:
 
 
     def collect_diamond(self):
+        stone = self.read_stone()
         for _ in range(3):
             self.image_tool.picture("100%", threshold=0.8, click_times=2)
         if (self.image_tool.text("升级")
             or self.image_tool.text("设备拆装")):
             self.image_tool.picture("bag", offset=(-100, 0))
+            if stone is not None:
+                self.upgrade_eqip()
             for i in range(1, 7):
-                self.book(i)
+                self.book_purple(i)
             self.image_tool.text("成长")
             self.image_tool.text("升级", click_times=3)
             self.esc()

@@ -42,13 +42,12 @@ def pha(window_id):
 
             # 执行每日任务
             scheduler.pending_task(window_id)
-            action.click(40, 275)  # 点击自动休眠
-            game.switch_rarity(window_id)
+            game.enter_afk(window_id)
 
             timer(cycle_time, "等待下一次循环", window_id)
         except Exception as e:
             print("发生异常")
-            time.sleep(cycle_time)
+            timer(cycle_time, "发生异常", window_id)
             continue
 
 
@@ -74,7 +73,7 @@ if __name__ == "__main__":
                     p = multiprocessing.Process(target=pha, args=(window_id,))
                     window_processes[window_id] = p
                     p.start()  # 启动新的进程
-                    timer(100, "等待下一个窗口启动", window_id)
+                    timer(300, "等待下一个窗口启动", window_id)
                     processed_count += 1  # 每启动一个进程就增加计数
 
                     if processed_count >= n:  # 达到限制后停止

@@ -288,7 +288,7 @@ class Action:
         self.window = window
 
 
-    def click(self, x, y, click_times=1):
+    def click(self, x, y, click_times=1, pos=None):
         """模拟点击"""
         # 检查是否已经绑定
         if not self.window.is_bound:
@@ -300,10 +300,14 @@ class Action:
         dm = self.window.dm
         dm.MoveTo(x, y)  # 移动到指定坐标
         for _ in range(click_times):
+            if pos:  # 如果activity存在，则输出
+                print(f"点击:{pos} {x, y}")
+            # else:
+            #     print(f"点击位置: {x, y}")
             dm.LeftClick()  # 执行点击操作
             # 添加延迟，确保操作完成（你可以根据需要调整延迟）
             time.sleep(1.5)
-            # print(f"点击{x, y}")
+
 
 
     def press(self, *keys, second=None):
@@ -471,13 +475,14 @@ class ImageTool:
             print(f"没有找到图片 '{png}'")
             return None
 
-    def color(self, coordinates, target_color, tolerance=25):
+
+    def color(self, coordinate, target_color, tolerance=25):
         """
-        判断多个指定位置的颜色是否为目标颜色，只要一个匹配成功就返回True。
-        :param coordinates: 坐标列表，包含多个 (x, y) 元组
+        判断指定位置的颜色是否为目标颜色。
+        :param coordinate: 坐标 (x, y)
         :param target_color: 目标颜色, 格式为 (R, G, B)
         :param tolerance: 容忍度，用于颜色匹配
-        :return: True 如果有一个点颜色匹配，False 否则
+        :return: True 如果颜色匹配，False 否则
         """
         # 获取窗口截图
         screenshot = self.action.window.capture_window()
@@ -489,16 +494,15 @@ class ImageTool:
         screenshot = np.array(screenshot)
         screenshot = screenshot.astype('uint8')
 
-        for (x, y) in coordinates:
-            # 获取指定坐标的像素颜色
-            pixel_color = screenshot[y, x]
+        # 获取指定坐标的像素颜色
+        x, y = coordinate
+        pixel_color = screenshot[y, x]
 
-            # 计算颜色差异
-            diff = np.abs(np.array(pixel_color) - np.array(target_color))
-            if np.all(diff <= tolerance):  # 如果颜色差异小于容忍度，认为颜色匹配
-                # print("找到目标颜色")
-                return True
-        # print("未找到目标颜色")
+        # 计算颜色差异
+        diff = np.abs(np.array(pixel_color) - np.array(target_color))
+        if np.all(diff <= tolerance):  # 如果颜色差异小于容忍度，认为颜色匹配
+            return True
+
         return False
 
     def text(self, target_text, offset=(0, 0), click_times=1, region=None):
@@ -579,5 +583,54 @@ class ImageTool:
         print(f"未找到目标文字 '{target_text}'")
         return None
 
+    def read_text(self, region=None):
+        """
+        捕获指定区域的屏幕截图并进行OCR文字识别
+        :param region: 截图区域，格式为 (left, top, right, bottom)，可选
+        :return: 识别到的文字列表，如果没有识别到文字，返回空列表
+        """
+        # 捕获屏幕截图
+        screenshot = self.action.window.capture_window()
 
+        # 如果没有获取到截图，返回空列表
+        if screenshot is None:
+            print("无法获取截图")
+            return []
+
+        # 如果提供了区域，则裁剪图片
+        if region:
+            left, top, right, bottom = region
+            screenshot = screenshot.crop((left, top, right, bottom))
+
+        # 将图片转换为 base64 编码
+        buffered = io.BytesIO()
+        screenshot.save(buffered, format="PNG")
+        img_base64 = base64.b64encode(buffered.getvalue()).decode()
+
+        # 向服务器发送 POST 请求进行 OCR 识别
+        url = "http://127.0.0.1:20086/base64"
+        try:
+            res = requests.post(url, json={"img": img_base64})
+            response_data = res.json()
+        except requests.exceptions.RequestException as e:
+            print(f"OCR请求出错: {e}")
+            Window.launch_ocr()
+            return None
+        except ValueError:
+            print("OCR返回的数据不是有效的 JSON")
+            return None
+
+        # 获取返回的 JSON 数据
+        response_data = res.json()
+
+        # 提取识别到的文字和坐标信息
+        if response_data["code"] == 1 and response_data["data"]:
+            recognized_text = []
+            for item in response_data["data"]:
+                recognized_text.append(item["text"])
+                print(recognized_text)
+            return recognized_text
+        else:
+            print("未识别到任何文字。")
+            return None
 

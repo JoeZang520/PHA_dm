@@ -21,17 +21,20 @@ class New:
         self.game.esc()
 
     def collect_diamond_new(self):
+        stone = self.game.read_stone()
         for _ in range(3):
             self.image_tool.picture("100%", threshold=0.8, click_times=2)
 
         self.auto_equip()
         self.salvage_equip("稀有")
+        if stone is not None:
+            self.game.upgrade_eqip()
         for i in range(1, 7):
-            self.game.book(i)
+            self.game.book_purple(i)
         self.image_tool.text("成长")
         self.image_tool.text("升级", click_times=3)
         self.game.esc()
-        self.image_tool.picture("100%", threshold=0.8, click_times=2)
+        self.image_tool.picture("100%", threshold=0.8, click_times=3)
 
     def auto_equip(self):
         self.image_tool.picture("bag", offset=(-100, 0))  # 角色
@@ -67,8 +70,7 @@ class New:
             time.sleep(90)
             print("点击boss")
             self.game.switch_auto("auto_green")
-            self.action.click(540, 80)  # 点击boss出现的地点
-            self.action.click(300, 830)  # 点击boss出现的地点
+            self.action.click(296,332)  # 点击boss出现的地点
             time.sleep(1)
             self.game.wait_loaded("ruby")
             if (self.image_tool.text("接受")

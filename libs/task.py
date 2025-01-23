@@ -62,6 +62,8 @@ class Task:
             (-20, -750),  # 每日任务
             (330, -140),  # 全部接收
             (330, -140),  # 全部接收
+            (330, -140),  # 全部接收
+            (330, -140),  # 全部接收
             (150, -750),  # 周常任务
             (330, -140),  # 全部接收
             (330, -140),  # 全部接收
@@ -102,9 +104,9 @@ class Task:
         self.image_tool.picture("ruby", offset=(-155, 450))  # toyz碎片
 
         for _ in range(3):
-            if self.image_tool.picture("toyz_purple", color=False):
+            if self.image_tool.picture("toyz_purple", color=True):
                 self.action.click(325, 350)  # 块合成
-                if self.image_tool.color([(330, 720)], (177, 230, 151), tolerance=20):
+                if self.image_tool.color((330, 720), (177, 230, 151), tolerance=20):
                     self.action.click(330, 720)  # 确认
                     time.sleep(5)
                     self.action.click(330, 720), self.action.click(330, 720)  # 确认
@@ -114,9 +116,9 @@ class Task:
             time.sleep(1)
 
         for _ in range(5):
-            if self.image_tool.picture("toyz_green", color=False):
+            if self.image_tool.picture("toyz_green", color=True):
                 self.action.click(325, 350)  # 块合成
-                if self.image_tool.color([(330, 720)], (177, 230, 151), tolerance=20):
+                if self.image_tool.color((330, 720), (177, 230, 151), tolerance=20):
                     self.action.click(330, 720)  # 确认
                     time.sleep(5)
                     self.action.click(330, 720), self.action.click(330, 720)  # 确认
@@ -126,9 +128,9 @@ class Task:
             time.sleep(1)
 
         for _ in range(10):
-            if self.image_tool.picture("toyz_white", color=False):
+            if self.image_tool.picture("toyz_white", color=True):
                 self.action.click(325, 350)  # 块合成
-                if self.image_tool.color([(330, 720)], (177, 230, 151), tolerance=20):
+                if self.image_tool.color((330, 720), (177, 230, 151), tolerance=20):
                     self.action.click(330, 720)  # 确认
                     time.sleep(5)
                     self.action.click(330, 720), self.action.click(330, 720)  # 确认
@@ -228,7 +230,7 @@ class Task:
             click_x = 50 + (i * 65)  # 每次点击位置的X坐标增加65
             self.action.click(click_x, 40)  # 执行点击
             for _ in range(30):
-                if self.image_tool.color([(500, 185)], (177, 230, 151), tolerance=20):
+                if self.image_tool.color((500, 185), (177, 230, 151)):
                     self.action.click(500, 185)  # 强化
                     self.action.click(380, 580)  # 确认
                     time.sleep(1)
