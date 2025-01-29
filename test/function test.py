@@ -6,7 +6,7 @@ from libs.new import New
 from libs.tool import ImageTool, Action, Window
 from libs.scheduler import Scheduler
 
-window_id = "001"
+window_id = "002"
 window = Window(window_id)
 log = Log(window_id)
 action = Action(window)
@@ -23,6 +23,6 @@ game.enter_game()
 
 # 以下是测试代码
 # game.upgrade_eqip()
-game.upgrade_blunt()
+game.sell_star789()
 
 

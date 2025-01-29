@@ -21,4 +21,4 @@ game.enter_game()
 
 
 # 以下是测试代码
-image_tool.picture("salvage")
+image_tool.picture("star8", threshold=0.92)

@@ -1,8 +1,10 @@
 import random
 import time
 import libs.config as config
+import re
 import os
 import sys
+
 
 class Game:
     def __init__(self, window, image_tool, action, log):
@@ -28,7 +30,7 @@ class Game:
 
     def in_game(self):
         if self.window.game_exist() and self.window.bind_window():
-            if self.image_tool.picture("ruby", click_times=0):
+            if self.image_tool.picture("ruby", click_times=0) or self.image_tool.picture("diamond", click_times=0):
                 print("in_game")
                 return True
             else:
@@ -136,9 +138,6 @@ class Game:
             self.image_tool.text("获得奖励", click_times=2)
         self.esc(2)
 
-
-
-
     def check_offline(self):
         print("check_offline")
         result = self.image_tool.text("服务器的")
@@ -152,15 +151,20 @@ class Game:
             self.log.info("游戏更新下载")
             self.wait_loaded("更新", wait_time=120, load="text", click_times=1, region=(0, 0, 150, 200))
             self.wait_loaded("玩", wait_time=120, load="text", click_times=1, region=(0, 0, 150, 200))
+            time.sleep(15)
+            self.image_tool.text("玩")
             self.wait_loaded("Additional data download", wait_time=15, offset=(0, 140), click_times=1, load="text")
         self.image_tool.text("Additional data download", offset=(0, 140))
         if self.image_tool.text("维护", click_times=0):
             self.log.info("游戏维护")
             self.window.close_window()
-            self.timer(600, "等待维护。。。")
-
+            self.timer(1800, "等待维护。。。")
 
     def book_orange(self, equip_number):
+        arm_stone = None
+        if equip_number == 1:
+            arm_stone = self.read_stone()
+            print(arm_stone)
         self.image_tool.picture("X")
         # 初始点击项
         x_offset = -110 + (equip_number - 1) * 55  # 根据 equip_number 动态计算 x 坐标
@@ -186,13 +190,12 @@ class Game:
 
         found_color = False
         all_equips = []  # 用于存储所有需要升级的装备信息
-        coordinate = (244, 610)
+        coordinate = (169, 611)  # 第二件装备的右下角
         offset = 77  # 每次增加的横坐标偏移量
         for i in range(5):
             orange = (173, 87, 62)
-            tolerance = 25
 
-            result1 = self.image_tool.color(coordinate, orange, tolerance)
+            result1 = self.image_tool.color(coordinate, orange)
             if result1:
                 print("找到橙色")
                 found_color = True
@@ -205,16 +208,22 @@ class Game:
                 # 判断是否需要点击空白处或红色亮点，检查装备是否需要加入收藏增益登记
                 if self.image_tool.picture("knife_without_spot", threshold=0.94):  # 未找到需要加入图鉴的装备
                     time.sleep(1)
-                    if self.image_tool.text("攻击力", region=(37,491,547,847)):
+                    if self.image_tool.text("攻击力", region=(37, 491, 547, 847)):
                         self.image_tool.picture("knife_without_spot", threshold=0.94)
                         self.image_tool.picture("knife", offset=(0, -120))  # 随便点击空白处
 
-
-                        equip = self.image_tool.read_text((368, 132, 551, 157))
-                        if equip is not None:
-                            all_equips.append(equip)  # 将当前装备信息添加到列表中
-                            # 更新横坐标
-                            coordinate = (coordinate[0] + offset, coordinate[1])
+                        if arm_stone is not None:
+                            equip = self.image_tool.read_text((368, 132, 551, 157))
+                            if equip is not None:
+                                # 将当前装备信息添加到列表中等待升级
+                                all_equips.append(equip)
+                                # 更新横坐标
+                                coordinate = (coordinate[0] + offset, coordinate[1])
+                        else:
+                            # 将装备材料化
+                            self.image_tool.picture("bag", offset=(230, -140))  # 设备材料化
+                            self.image_tool.picture("bag", offset=(240, -350), click_times=2)  # 确认
+                            time.sleep(2)
 
                     else:
                         self.image_tool.picture("knife_without_spot", threshold=0.94)
@@ -247,7 +256,7 @@ class Game:
                                     self.image_tool.text("选择")
                                     self.image_tool.text("确认", click_times=2)
 
-                        if not self.image_tool.text("攻击力", region=(37,491,547,847)):
+                        if not self.image_tool.text("攻击力", region=(37, 491, 547, 847)):
                             self.image_tool.picture("knife")
                             self.image_tool.picture("knife", offset=(0, -150))
                             print("分解装备")
@@ -267,7 +276,6 @@ class Game:
                 break
 
         return all_equips  # 返回所有需要升级的装备信息
-
 
     # 将装备加入图鉴或者分解
     def book_purple(self, equip_number):
@@ -295,10 +303,9 @@ class Game:
 
         found_color = False
         for i in range(20):
-            coordinate = (91,685)
+            coordinate = (91, 685)
             purple = (108, 55, 158)
             tolerance = 25
-
 
             result2 = self.image_tool.color(coordinate, purple, tolerance)
             if result2:
@@ -325,7 +332,7 @@ class Game:
                     result = self.image_tool.picture("knife")
                     if result is not None:
                         x2, y2 = result
-                        self.action.drag((x2, y2 + 390), (x2, y2+25))  # 拖拽到下一页
+                        self.action.drag((x2, y2 + 390), (x2, y2 + 25))  # 拖拽到下一页
                         time.sleep(1)
 
                         # 点击查找需未加入图鉴的装备
@@ -354,10 +361,113 @@ class Game:
                 print("未找到紫色")
                 break
 
+    def book_blunt(self):
+        self.action.click(146, 991, pos="背包")
+        self.action.click(482, 907, pos="材料化物品")
+        self.action.click(43, 471, pos="装备")
+
+        i = 0  # 控制物品点击位置
+        while i < 8:
+            if not self.image_tool.color((90 + i * 70, 530), (173, 87, 62)):
+                break
+            self.action.click(90 + i * 70, 530)
+            self.action.click(414, 349, pos="百科全书")
+            self.action.click(504, 480, pos="knife")
+
+            # 从第三行开始点击，每行点击3次
+            for row in range(3):  # 循环3行，分别是第三行、第二行、第一行
+                for col in range(3):  # 每行点击3次
+                    self.action.click(350 + col * 70, 838 - row * 125)
+                    if self.image_tool.text("收藏增益登记", offset=(20, 60)):
+                        self.image_tool.text("选择")
+                        i -= 1
+            self.action.click(504, 480, pos="knife")
+            self.action.click(504, 330, pos="空白处")
+            i += 1
+
+        self.esc(2)
+
+    def sell_star789(self):
+        time.sleep(2)
+        self.action.click(541, 332, pos="左箭头")
+        self.action.click(339, 146, pos="交易所"), time.sleep(3)
+        self.image_tool.text("消除")
+        self.image_tool.text("消除")
+        self.action.click(363, 995, pos="材料"), time.sleep(2)
+        self.image_tool.text("已注册的物品")
+        for _ in range(3):
+            self.image_tool.text("过期", offset=(370, 0))
+
+        for equip in ["star7", "star8", "star9"]:
+            self.action.click(472, 885, pos="注册")
+            self.action.click(154, 362, pos="+")
+
+            if self.image_tool.picture(equip, threshold=0.92):
+                self.image_tool.text("确认")
+
+                result = self.image_tool.read_text((331,529,429,586))
+                if not result:
+                    print("未识别到任何文本，跳过此次循环")
+                    continue
+                # **筛选出 result 里的所有数字**
+                numbers = re.findall(r'\d+', ' '.join(result))  # 将列表转换成字符串后提取所有数字
+                if not numbers:
+                    print(f"未找到有效的数字: {result}")
+                    continue  # 跳过当前循环
+                number = int(numbers[-1])  # 取最后一个数字（通常是正确的物品数量）
+                self.action.click(307, 633, pos="输入框")
+                for digit in str(number - 10):  # 物品数量 -1
+                    self.action.press(digit)
+
+                self.action.click(374, 767, pos="注册物品")
+                self.action.click(374, 767, pos="注册物品")
+                self.action.click(378, 623, pos="确认")
+        self.esc(2)
+
+    def sell_all(self):
+        time.sleep(2)
+        self.action.click(541,332, pos = "左箭头")
+        self.action.click(339, 146, pos="交易所"), time.sleep(3)
+        self.image_tool.text("消除")
+        self.image_tool.text("消除")
+        self.action.click(363, 995, pos="材料"), time.sleep(2)
+        for i in range(7):
+            self.action.click(472, 885, pos="注册")
+            if self.image_tool.text("注册物品", click_times=0):
+                self.action.click(154, 362, pos="+")
+                self.action.click(456, 224, pos="全部的")
+                self.action.click(455, 336, pos="素材化装备")
+                self.action.click(85, 310)
+                self.image_tool.text("确认")
+
+                result = self.image_tool.read_text((331, 536, 413, 579))
+                if not result:
+                    print("未识别到任何文本，跳过此次循环")
+                    continue
+                # **筛选出 result 里的所有数字**
+                numbers = re.findall(r'\d+', ' '.join(result))  # 将列表转换成字符串后提取所有数字
+                if not numbers:
+                    print(f"未找到有效的数字: {result}")
+                    continue  # 跳过当前循环
+                number = int(numbers[-1])  # 取最后一个数字（通常是正确的物品数量）
+                self.action.click(307, 633, pos="输入框")
+                for digit in str(number - 10):  # 物品数量 -1
+                    self.action.press(digit)
+
+                self.action.click(374, 767, pos="注册物品")
+                self.action.click(374, 767, pos="注册物品")
+                self.action.click(378, 623, pos="确认")
+            else:
+                break
+
+        self.esc(2)
+
+
+
 
     def upgrade_eqip(self):
         all_equips = []  # 用于存储所有装备信息
-        for i in range(1, 7):  
+        for i in range(1, 7):
             equips = self.book_orange(i)  # 每次调用 book_orange，得到当前的装备信息
             if equips:
                 all_equips.extend(equips)
@@ -366,7 +476,6 @@ class Game:
             self.action.click(540, 331, pos="左箭头")
             self.action.click(402, 144, pos="装备升级")
             self.action.click(294, 633, pos="大装备升级")
-
             base_x = 118
             base_y = 689
             offset = 70  # 每次点击水平偏移量
@@ -388,7 +497,6 @@ class Game:
                                 self.action.click(382, 578)  # 升级警告处的升级
                     else:
                         print("装备不匹配")
-
         self.esc(2)
         self.image_tool.picture("right")
         self.image_tool.picture("bag", offset=(-100, 0))
@@ -416,9 +524,6 @@ class Game:
                         break
         self.esc(3)
 
-
-
-
     def read_stone(self):
         self.action.click(540, 331, pos="左箭头")
         self.action.click(402, 144, pos="装备升级")
@@ -432,14 +537,13 @@ class Game:
             if not self.image_tool.color((344, 819), (177, 230, 151)):
                 print("没有武器升级石")
                 self.esc(4)
+                self.action.click(46, 995, pos="头像")
                 return None
             else:
                 self.action.press("esc")
         self.esc(4)
+        self.action.click(46, 995, pos="头像")
         return True
-
-
-
 
     def switch_auto(self, target_image):
         image_list = ["auto_grey", "auto_red", "auto_green"]
@@ -515,6 +619,7 @@ class Game:
         offset_y = 0  # 偏移 Y 默认固定为 0
 
         # 检查是否在战斗中
+        self.image_tool.text("确认")  # 点击Mgold价格变动提醒
         self.image_tool.text("退出")
         # 执行地图切换操作
         self.switch_auto("auto_red")
@@ -540,22 +645,36 @@ class Game:
         self.wait_loaded("ruby")
         time.sleep(3)
 
-
     def collect_diamond(self):
-        stone = self.read_stone()
         for _ in range(3):
             self.image_tool.picture("100%", threshold=0.8, click_times=2)
+        self.auto_equip()
+        self.esc(2)
         if (self.image_tool.text("升级")
-            or self.image_tool.text("设备拆装")):
-            self.image_tool.picture("bag", offset=(-100, 0))
-            if stone is not None:
-                self.upgrade_eqip()
+                or self.image_tool.text("设备拆装")):
+            self.action.click(245, 989, pos="战斗")
+            self.action.click(46, 898, pos="town")
+            self.esc(2)
+            self.wait_loaded("ruby")
+            self.upgrade_eqip()
             for i in range(1, 7):
                 self.book_purple(i)
             self.image_tool.text("成长")
             self.image_tool.text("升级", click_times=3)
             self.esc()
         self.image_tool.picture("100%", threshold=0.8, click_times=3)
+        self.upgrade_blunt()
+        self.sell_star789()
+        self.book_blunt()
+        self.sell_all()
+        self.choose_map()
+
+    def auto_equip(self):
+        self.image_tool.picture("bag", offset=(-100, 0))  # 角色
+        self.image_tool.picture("bag", offset=(40, -70))  # 装备
+        self.image_tool.picture("bag", offset=(400, -480))  # auto按钮
+        self.image_tool.text("BOSS")
+        self.image_tool.text("确认")
 
     def move_in_party_dungeon(self):
         self.action.press("A", second=6)
@@ -572,7 +691,6 @@ class Game:
         self.action.press("D", second=3)
         self.action.press("W", second=2)
         self.action.press("A", second=2)
-
 
     def boss(self):
         print("进入boss")

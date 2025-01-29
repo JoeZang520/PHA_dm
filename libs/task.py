@@ -106,7 +106,7 @@ class Task:
         for _ in range(3):
             if self.image_tool.picture("toyz_purple", color=True):
                 self.action.click(325, 350)  # 块合成
-                if self.image_tool.color((330, 720), (177, 230, 151), tolerance=20):
+                if self.image_tool.color((330, 720), (177, 230, 151)):
                     self.action.click(330, 720)  # 确认
                     time.sleep(5)
                     self.action.click(330, 720), self.action.click(330, 720)  # 确认
@@ -118,7 +118,7 @@ class Task:
         for _ in range(5):
             if self.image_tool.picture("toyz_green", color=True):
                 self.action.click(325, 350)  # 块合成
-                if self.image_tool.color((330, 720), (177, 230, 151), tolerance=20):
+                if self.image_tool.color((330, 720), (177, 230, 151)):
                     self.action.click(330, 720)  # 确认
                     time.sleep(5)
                     self.action.click(330, 720), self.action.click(330, 720)  # 确认
@@ -130,7 +130,7 @@ class Task:
         for _ in range(10):
             if self.image_tool.picture("toyz_white", color=True):
                 self.action.click(325, 350)  # 块合成
-                if self.image_tool.color((330, 720), (177, 230, 151), tolerance=20):
+                if self.image_tool.color((330, 720), (177, 230, 151)):
                     self.action.click(330, 720)  # 确认
                     time.sleep(5)
                     self.action.click(330, 720), self.action.click(330, 720)  # 确认
@@ -226,13 +226,13 @@ class Task:
         time.sleep(2)
         self.image_tool.text("怪物")
         time.sleep(2)
-        for i in range(6):  # 一共执行6次
-            click_x = 50 + (i * 65)  # 每次点击位置的X坐标增加65
-            self.action.click(click_x, 40)  # 执行点击
-            for _ in range(30):
-                if self.image_tool.color((500, 185), (177, 230, 151)):
-                    self.action.click(500, 185)  # 强化
-                    self.action.click(380, 580)  # 确认
+        for i in range(12):  # 一共执行6次
+            click_y = 50 + (i * 70)  #
+            self.action.click(50, click_y)  # 执行点击
+            for _ in range(40):
+                if self.image_tool.color((477,240), (177, 230, 151)):
+                    self.action.click(477,240)  # 升级
+                    self.action.click(376,582)  # 确认
                     time.sleep(1)
                 else:
                     break

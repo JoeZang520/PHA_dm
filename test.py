@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     # 获取所有账户的 window_id
     accounts = config.get_accounts()
-    pha("004")
+    pha("001")
 
 
 

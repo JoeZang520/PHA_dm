@@ -18,30 +18,25 @@ class New:
         self.image_tool.text(rarity)
         self.image_tool.text("分解")
         self.image_tool.text("确认", click_times=2)
-        self.game.esc()
+        self.game.esc(2)
 
     def collect_diamond_new(self):
-        stone = self.game.read_stone()
+        self.action.click(245, 989, pos="战斗")
+        self.action.click(46, 898, pos="town")
         for _ in range(3):
             self.image_tool.picture("100%", threshold=0.8, click_times=2)
-
-        self.auto_equip()
+        self.game.auto_equip()
         self.salvage_equip("稀有")
-        if stone is not None:
-            self.game.upgrade_eqip()
+        self.game.upgrade_eqip()
         for i in range(1, 7):
             self.game.book_purple(i)
         self.image_tool.text("成长")
         self.image_tool.text("升级", click_times=3)
         self.game.esc()
         self.image_tool.picture("100%", threshold=0.8, click_times=3)
+        self.game.upgrade_blunt()
+        self.game.choose_map()
 
-    def auto_equip(self):
-        self.image_tool.picture("bag", offset=(-100, 0))  # 角色
-        self.image_tool.picture("bag", offset=(40, -70))  # 装备
-        self.image_tool.picture("bag", offset=(400, -480))  # auto按钮
-        self.image_tool.text("BOSS")
-        self.image_tool.text("确认")
 
     def task_guide(self):
         self.image_tool.text("退出")

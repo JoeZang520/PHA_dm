@@ -476,7 +476,7 @@ class ImageTool:
             return None
 
 
-    def color(self, coordinate, target_color, tolerance=25):
+    def color(self, coordinate, target_color, tolerance=20):
         """
         判断指定位置的颜色是否为目标颜色。
         :param coordinate: 坐标 (x, y)
